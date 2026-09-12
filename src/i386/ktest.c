@@ -17,7 +17,7 @@ uint8_t must_caught_exception = 0;
 static uint8_t th_flag = 0;
 extern uint32_t kernel_page_directory[1024];
 
-void test_th() {
+void test_th(void) {
     INFO("test thread: hello world, i'm working");
     th_flag |= (1 << 0);
     while (1) {
@@ -25,7 +25,7 @@ void test_th() {
     }
 }
 
-void test2_th() {
+void test2_th(void) {
     INFO("test2 thread: hello world, i'm working");
     th_flag |= (1 << 1);
     while (1) {
@@ -33,11 +33,10 @@ void test2_th() {
     }
 }
 
-extern void get_bootloader_protocol();
-void ktest() {
+extern void get_bootloader_protocol(void);
+void ktest(void) {
     INFO("Start testing");
     INFO("Test 1: ISR");
-    interrupt_init();
     INFO("Divide by zero...");
     volatile uint32_t a = 1;
     a--;
@@ -46,7 +45,7 @@ void ktest() {
     must_caught_exception = 0;
     test_success();
     INFO("Not test: Boot protocol setup");
-    get_bootloader_protocol();
+    /*
     INFO("Test 2: Memory Management");
     mm_init();
     INFO("Allocating some page...");
@@ -61,6 +60,7 @@ void ktest() {
     }
     INFO("Freeing *num");
     vfree(kernel_page_directory, num, 4);
+    */
     INFO("Test 3: Timer");
     timer_init();
     uint32_t ftm = timer_get_ticks();
@@ -75,6 +75,7 @@ void ktest() {
         INFO("Timer is working");
         test_success();
     }
+    /*
     INFO("Test 4: Scheduler");
     scheduler_init();
     INFO("Add, start test threads and wait 10 timer ticks");
@@ -97,6 +98,7 @@ void ktest() {
         WARN("Invalid th_flag");
         test_failed();
     }
+    */
     INFO("End testing");
     if (tests_failed) {
         WARN("%d success; %d failed", tests_success, tests_failed);

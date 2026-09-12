@@ -22,7 +22,7 @@ void pic_mask_irq(uint8_t irq) {
     DEBUG("PIC: masked IRQ%d", irq);
 }
 
-void pic_mask_all() {
+void pic_mask_all(void) {
     outb(PIC1_DATA, 0xFF);
     outb(PIC2_DATA, 0xFF);
     DEBUG("PIC: all IRQs masked");

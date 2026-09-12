@@ -8,7 +8,7 @@
 #include "test.h"
 extern uint32_t info_ptr;
 
-void multiboot1_parse_data() {
+void multiboot1_parse_data(void) {
     if (!info_ptr) {
         ERROR("boot protocol seems to be multiboot1, but info_ptr = 0");
         halt();

@@ -49,7 +49,7 @@ int expand_heap(int is_initial) {
     return 0;
 }
 
-void kheap_init() {
+void kheap_init(void) {
     memset(&heap_stats, 0, sizeof(heap_stats_t));
     heap_brk = KHEAP_START;
     for (int i = 0; i < KHEAP_INITIAL_PAGES; i++) {

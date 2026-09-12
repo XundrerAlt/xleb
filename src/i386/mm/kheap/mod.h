@@ -24,5 +24,5 @@ extern heap_stats_t heap_stats;
 
 int expand_heap(int is_initial);
 void kfree(void *ptr);
-void kheap_init();
+void kheap_init(void);
 void* kmalloc(uint32_t size);

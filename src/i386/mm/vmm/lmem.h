@@ -5,4 +5,4 @@
 #define LMEM_START_PADDR 0x400000
 #define LMEM_PDE_SIZE (4 * 1024 * 1024)
 
-void map_lmem();
+void map_lmem(void);

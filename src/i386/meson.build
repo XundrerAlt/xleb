@@ -1,5 +1,6 @@
 sources += files(
     'gdt.S',
+    'kinit.c',
 )
 
 if get_option('enable_tests')
@@ -10,4 +11,4 @@ subdir('basic_drivers')
 subdir('boot')
 subdir('interrupt')
 subdir('mm')
-subdir('task')
+#subdir('task') - migrate from traditional pmm to untyped

@@ -12,7 +12,7 @@
 static uint32_t lmem_page_tables[128][1024] __attribute__((aligned(4096)));
 extern uint32_t kernel_page_directory[1024];
 
-void map_lmem() {
+void map_lmem(void) {
     uint32_t pstart = LMEM_START_PADDR;
     uint32_t vstart = PHYS_TO_VIRT(pstart);
     uint32_t start_pde = vstart >> 22;

@@ -28,4 +28,4 @@ typedef struct {
 
 extern memory_map_t memory_map;
 
-void mm_init();
+void mm_init(void);

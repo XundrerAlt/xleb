@@ -7,7 +7,7 @@
 #include "mm/ppage/mod.h"
 #include "mm/vmm/lmem.h"
 
-void mm_init() {
+void mm_init(void) {
     INFO("memory manager: hello world");
     map_lmem();
     ppage_init();

@@ -10,9 +10,9 @@ static volatile uint32_t timer_ticks = 0;
 
 void timer_handler(regs_t *r) {
     timer_ticks++;
-    schedule();
+    //schedule();
 }
 
-uint32_t timer_get_ticks() {
+uint32_t timer_get_ticks(void) {
     return timer_ticks;
 }

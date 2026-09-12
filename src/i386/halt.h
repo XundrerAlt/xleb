@@ -3,7 +3,7 @@
 
 #pragma once
 
-static inline void halt() {
+static inline void halt(void) {
     while (1) {
         __asm__ volatile ("hlt");
     }

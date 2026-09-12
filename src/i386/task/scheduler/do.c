@@ -8,7 +8,7 @@
 static int current_idx = 0;
 extern void switch_to(uint32_t** old_esp, uint32_t* new_esp);
 
-void schedule() {
+void schedule(void) {
     if (thread_count == 0) return;
     thread_t* old_thread = current_thread;
     current_idx = (current_idx + 1) % thread_count;

@@ -6,11 +6,11 @@
 extern uint32_t tests_success;
 extern uint32_t tests_failed;
 extern uint8_t must_caught_exception;
-static void test_failed() {
+static void test_failed(void) {
     WARN("Test failed");
     tests_failed++;
 }
-static void test_success() {
+static void test_success(void) {
     INFO("Test success");
     tests_success++;
 }

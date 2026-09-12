@@ -32,7 +32,7 @@ static uint32_t find_mem_for_page_array(uint32_t size) {
     return 0;
 }
 
-void ppage_init() {
+void ppage_init(void) {
     total_pages = memory_map.available_memory / PAGE_SIZE;
     uint32_t page_array_size = total_pages * sizeof(struct page);
     uint32_t page_array_vaddr = PHYS_TO_VIRT(find_mem_for_page_array(page_array_size));

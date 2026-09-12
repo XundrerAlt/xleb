@@ -8,7 +8,7 @@
 #define TIMER_HZ 100
 extern void timer_handler(regs_t *r);
 
-void timer_init() {
+void timer_init(void) {
     uint32_t divisor = 1193180 / TIMER_HZ;
     outb(0x43, 0x36);
     outb(0x40, divisor & 0xFF);

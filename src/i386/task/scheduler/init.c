@@ -9,14 +9,14 @@ thread_t* thread_queue[16];
 int thread_count = 0;
 thread_t* current_thread = NULL;
 
-void idle() {
+void idle(void) {
     DEBUG("idle thread: hello world");
     while (1) {
         halt();
     }
 }
 
-void scheduler_init() {
+void scheduler_init(void) {
     INFO("scheduler: hello world");
     current_thread = thread_create(idle);
     current_thread->state = THREAD_RUNNING;

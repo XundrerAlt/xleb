@@ -48,11 +48,7 @@ higher_half:
     movl $0, (%eax)
     invlpg (%eax)
     call gdt_load
-#ifdef ENABLE_TESTS
-    call ktest
-#else
-    call kmain
-#endif
+    call kinit
     hlt
 
 .section .data

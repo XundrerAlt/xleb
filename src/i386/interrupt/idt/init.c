@@ -8,7 +8,7 @@
 extern uint32_t isr_entry_table[32];
 extern uint32_t irq_entry_table[16];
 
-void interrupt_init() {
+void interrupt_init(void) {
     for (int i = 0; i < 32; i++) {
         idt_set_gate(i, isr_entry_table[i], 0x08, 0x8E);
     }
