@@ -1,9 +1,10 @@
 export PS1="\n\[\033[1;32m\][kernel] \[\033[0m\]\u@\h:\w\n\$ "
+export PROMPT=$'\n%{\033[1;32m%}[kernel] %{\033[0m%}%n@%m:%~\n$ '
+
 set_target() {
     case "$1" in
         i386)
             export TARGET="i386-unknown-none"
-            export ARCH_FLAGS="--target=$TARGET -march=i386 -mno-sse -mno-mmx"
             ;;
         *)
             echo "Unknown target. Supported: i386"
@@ -11,58 +12,41 @@ set_target() {
             ;;
     esac
     export ARCH="$1"
-    export CFLAGS="$ARCH_FLAGS -ffreestanding -nostdlib -Wno-unused-command-line-argument"
-    export LDFLAGS="-fuse-ld=lld $ARCH_FLAGS -nostdlib"
 }
 
 b() {
-    if [ -z "$TARGET" ]; then
+    if [ -z "$ARCH" ]; then
         echo "Error: target not set. Use 'set_target <arch>' first."
         return 1
     fi
-    mkdir -p build
-    cd build
-    cmake .. \
-        -DCMAKE_C_COMPILER=clang \
-        -DCMAKE_C_FLAGS="$CFLAGS" \
-        -DCMAKE_ASM_COMPILER=clang \
-        -DCMAKE_ASM_FLAGS="$CFLAGS" \
-        -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS" \
-        -DCMAKE_SYSTEM_NAME="Generic" \
-        -DARCH="$ARCH"
-    make -j$(nproc)
-    cd ..
+    meson setup build -Darch="$ARCH" --cross-file=toolchains/$TARGET.txt --reconfigure
+    ninja -C build
+}
+r() {
+    qemu-system-$ARCH -kernel build/kernel -serial stdio
+}
+rd() {
+    qemu-system-$ARCH -kernel build/kernel -serial stdio -s -S
 }
 br() {
     b
-    qemu-system-$ARCH -kernel build/kernel -serial stdio
+    r
 }
 bt() {
-    if [ -z "$TARGET" ]; then
+    if [ -z "$ARCH" ]; then
         echo "Error: target not set. Use 'set_target <arch>' first."
         return 1
     fi
-    mkdir -p build
-    cd build
-    cmake .. \
-        -DCMAKE_C_COMPILER=clang \
-        -DCMAKE_C_FLAGS="$CFLAGS" \
-        -DCMAKE_ASM_COMPILER=clang \
-        -DCMAKE_ASM_FLAGS="$CFLAGS" \
-        -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS" \
-        -DCMAKE_SYSTEM_NAME="Generic" \
-        -DARCH="$ARCH" \
-        -DENABLE_TESTS=ON
-    make -j$(nproc)
-    cd ..
+    meson setup build -Darch="$ARCH" --cross-file=toolchains/$TARGET.txt -Denable_tests=true --reconfigure
+    ninja -C build
 }
 btr() {
     bt
-    qemu-system-$ARCH -kernel build/kernel -serial stdio
+    r
 }
 bd() {
     b
-    qemu-system-$ARCH -kernel build/kernel -serial stdio -s -S
+    rd
 }
 cl() {
     rm -rf build*
@@ -91,3 +75,5 @@ echo "  cl - delete all build directories"
 echo "  cbr - delete all build + build kernel + run with qemu"
 echo "  cbtr - delete all build + build tests + run with qemu"
 echo "  d - start lldb + connect to localhost:1234"
+echo "  r - run with qemu"
+echo "  rd - run with qemu (with options -s -S)"

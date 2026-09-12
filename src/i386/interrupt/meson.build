@@ -1,0 +1,4 @@
+subdir('idt')
+subdir('irq')
+subdir('isr')
+subdir('pic')
