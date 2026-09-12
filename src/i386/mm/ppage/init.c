@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: GPL-2.0
-// Copyright (c) 2026 Xundrer-alt
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 XundrerAlt
 #include "debug.h"
 #include "halt.h"
 #include "list.h"
