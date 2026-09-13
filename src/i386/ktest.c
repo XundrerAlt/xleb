@@ -36,8 +36,8 @@ extern void get_bootloader_protocol(void);
 void ktest(void) {
     INFO("Start testing");
     INFO("Test 1: Memory manager");
-    DEBUG("Allocate 4 bytes of untyped memory");
-    uint32_t addr = untyped_alloc(4);
+    DEBUG("Retype 4 bytes of untyped memory");
+    uint32_t addr = retype(OBJ_FRAME, 2);
     DEBUG("Address: 0x%x", addr);
     if (addr) {
         uint32_t *virt_addr = temp_map(addr);
