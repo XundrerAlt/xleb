@@ -2,8 +2,8 @@
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 #include "debug.h"
 #include "halt.h"
-#include "task/scheduler/mod.h"
-#include "task/thread/mod.h"
+#include "mod.h"
+#include "thread/mod.h"
 
 static int current_idx = 0;
 extern void switch_to(uint32_t** old_esp, uint32_t* new_esp);

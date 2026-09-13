@@ -11,4 +11,4 @@ subdir('basic_drivers')
 subdir('boot')
 subdir('interrupt')
 subdir('mm')
-#subdir('task') - migrate from traditional pmm to untyped
+subdir('thread')

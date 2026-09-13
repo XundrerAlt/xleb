@@ -34,6 +34,7 @@ typedef struct {
 typedef enum {
     OBJ_NONE = 0,
     OBJ_FRAME,
+    OBJ_THREAD,
 } obj_type_t;
 
 extern memory_map_t memory_map;

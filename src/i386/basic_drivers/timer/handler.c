@@ -4,13 +4,13 @@
 #include "interrupt/irq/mod.h"
 #include "basic_drivers/timer/mod.h"
 #include "iob.h"
-#include "task/scheduler/mod.h"
+#include "scheduler/mod.h"
 
 static volatile uint32_t timer_ticks = 0;
 
 void timer_handler(regs_t *r) {
     timer_ticks++;
-    //schedule();
+    schedule();
 }
 
 uint32_t timer_get_ticks(void) {

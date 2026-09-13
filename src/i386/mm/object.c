@@ -4,10 +4,12 @@
 #include "debug.h"
 #include "mod.h"
 #include "stdint.h"
+#include "thread/mod.h"
 
 uint32_t obj_size(obj_type_t type, uint32_t size) {
     switch (type) {
         case OBJ_FRAME: return 1 << size;
+        case OBJ_THREAD: return sizeof(thread_t);
         default: return 0;
     }
 }

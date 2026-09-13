@@ -63,17 +63,21 @@ cbtr() {
 d() {
     lldb build/kernel -o "gdb-remote localhost:1234"
 }
+help() {
+    echo "Available commands:"
+    echo "  set_target i386"
+    echo "  b - build kernel for current target"
+    echo "  br - build kernel + run with qemu"
+    echo "  bt - build tests for current target"
+    echo "  btr - build tests + run with qemu"
+    echo "  bd - build kernel + run with qemu (with options -s -S)"
+    echo "  cl - delete all build directories"
+    echo "  cbr - delete all build + build kernel + run with qemu"
+    echo "  cbtr - delete all build + build tests + run with qemu"
+    echo "  d - start lldb + connect to localhost:1234"
+    echo "  r - run with qemu"
+    echo "  rd - run with qemu (with options -s -S)"
+    echo "  help - print this message"
+}
 set_target i386
-echo "Available commands:"
-echo "  set_target i386"
-echo "  b - build kernel for current target"
-echo "  br - build kernel + run with qemu"
-echo "  bt - build tests for current target"
-echo "  btr - build tests + run with qemu"
-echo "  bd - build kernel + run with qemu (with options -s -S)"
-echo "  cl - delete all build directories"
-echo "  cbr - delete all build + build kernel + run with qemu"
-echo "  cbtr - delete all build + build tests + run with qemu"
-echo "  d - start lldb + connect to localhost:1234"
-echo "  r - run with qemu"
-echo "  rd - run with qemu (with options -s -S)"
+help

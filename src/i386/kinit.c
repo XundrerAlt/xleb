@@ -5,7 +5,7 @@
 #include "interrupt/init.h"
 #include "mm/mod.h"
 #include "stdint.h"
-#include "task/scheduler/mod.h"
+#include "scheduler/mod.h"
 
 extern void get_bootloader_protocol(void);
 void kinit(void) {
@@ -14,7 +14,7 @@ void kinit(void) {
     cap_init();
     mm_init();
     timer_init();
-    //scheduler_init();
+    scheduler_init();
 #ifdef ENABLE_TESTS
     extern void ktest(void);
     ktest();

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 #pragma once
-#include "task/thread/mod.h"
+#include "thread/mod.h"
 
 extern thread_t* thread_queue[16];
 extern int thread_count;

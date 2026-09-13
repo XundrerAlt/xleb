@@ -3,3 +3,4 @@ if not get_option('enable_tests')
 endif
 subdir(arch)
 subdir('cap')
+subdir('scheduler')

@@ -7,7 +7,7 @@
 #include "mm/mod.h"
 #include "mm/virtconv.h"
 #include "stdint.h"
-#include "task/scheduler/mod.h"
+#include "scheduler/mod.h"
 #include "test.h"
 
 uint32_t tests_success = 0;
@@ -72,9 +72,7 @@ void ktest(void) {
         INFO("Timer is working");
         test_success();
     }
-    /*
     INFO("Test 3: Scheduler");
-    scheduler_init();
     INFO("Add, start test threads and wait 10 timer ticks");
     scheduler_add_thread(test_th);
     scheduler_add_thread(test2_th);
@@ -95,7 +93,6 @@ void ktest(void) {
         WARN("Invalid th_flag");
         test_failed();
     }
-    */
     INFO("End testing");
     if (tests_failed) {
         WARN("%d success; %d failed", tests_success, tests_failed);
