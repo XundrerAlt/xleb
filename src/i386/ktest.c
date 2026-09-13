@@ -4,6 +4,7 @@
 #include "debug.h"
 #include "halt.h"
 #include "interrupt/init.h"
+#include "interrupt/syscall/mod.h"
 #include "mm/mod.h"
 #include "mm/virtconv.h"
 #include "stdint.h"
@@ -93,6 +94,15 @@ void ktest(void) {
         WARN("Invalid th_flag");
         test_failed();
     }
+    INFO("Test 4: Syscall");
+    int ret;
+    __asm__ volatile(
+        "int $0x80"
+        : "=a" (ret)
+        : "a" (SYS_PRINT)
+    );
+    if (!ret) test_success();
+    else test_failed();
     INFO("End testing");
     if (tests_failed) {
         WARN("%d success; %d failed", tests_success, tests_failed);
