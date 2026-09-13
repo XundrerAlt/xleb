@@ -6,7 +6,7 @@
 #include "thread/mod.h"
 
 static int current_idx = 0;
-extern void switch_to(uint32_t** old_esp, uint32_t* new_esp);
+extern void switch_to(uint32_t** old_esp, thread_t* new_thread);
 
 void schedule(void) {
     if (thread_count == 0) return;
@@ -15,5 +15,5 @@ void schedule(void) {
     thread_t* next_thread = thread_queue[current_idx];
     current_thread = next_thread;
     next_thread->state = THREAD_RUNNING;
-    switch_to(&old_thread->esp, next_thread->esp);
+    switch_to(&old_thread->esp, next_thread);
 }

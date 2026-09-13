@@ -19,9 +19,15 @@ void isr_handler(regs_t *r) {
             DEBUG("EAX: 0x%x, EBX: 0x%x, ECX: 0x%x, EDX: 0x%x", r->eax, r->ebx, r->ecx, r->edx);
             DEBUG("EIP: 0x%x, CS: 0x%x, EFLAGS: 0x%x", r->eip, r->cs, r->eflags);
             return;
-        /*case 14:
-            page_fault_handler(r);
-            return;*/
+        case 14:
+            ERROR("Fatal exception %d: %s. Error code: 0x%x", r->int_no, ex_names[r->int_no], r->err_code);
+            ERROR("EAX: 0x%x, EBX: 0x%x, ECX: 0x%x, EDX: 0x%x", r->eax, r->ebx, r->ecx, r->edx);
+            ERROR("EIP: 0x%x, CS: 0x%x, EFLAGS: 0x%x", r->eip, r->cs, r->eflags);
+            uint32_t cr2;
+            __asm__ volatile("mov %%cr2, %0" : "=r" (cr2));
+            ERROR("CR2: 0x%x", cr2);
+            halt();
+            return;
         default:
             ERROR("Fatal exception %d: %s. Error code: 0x%x", r->int_no, ex_names[r->int_no], r->err_code);
             ERROR("EAX: 0x%x, EBX: 0x%x, ECX: 0x%x, EDX: 0x%x", r->eax, r->ebx, r->ecx, r->edx);

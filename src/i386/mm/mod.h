@@ -33,8 +33,10 @@ typedef struct {
 
 typedef enum {
     OBJ_NONE = 0,
+    OBJ_UNTYPED,
     OBJ_FRAME,
     OBJ_THREAD,
+    OBJ_VNODE,
 } obj_type_t;
 
 extern memory_map_t memory_map;
@@ -45,3 +47,4 @@ void *temp_map(uint32_t phys);
 void temp_unmap(void);
 void temp_map_init(void);
 uint32_t retype(obj_type_t type, uint32_t size);
+uint32_t create_page_directory(void);

@@ -32,6 +32,26 @@ static inline uint32_t *get_current_pd(void) {
     return (uint32_t*)PHYS_TO_VIRT(pd_phys);
 }
 
+uint32_t create_page_directory(void) {
+    uint32_t pd_phys = retype(OBJ_VNODE, PAGE_SIZE);
+    if (!pd_phys) {
+        ERROR("create_page_directory: out of memory");
+        return 0;
+    }
+    uint32_t *pd = (uint32_t*)temp_map(pd_phys);
+    if (!pd) {
+        ERROR("create_page_directory: temp_map failed");
+        return 0;
+    }
+    memset(pd, 0, PAGE_SIZE);
+    extern uint32_t kernel_page_directory[1024];
+    for (int i = 768; i < 1024; i++) {
+        pd[i] = kernel_page_directory[i];
+    }
+    temp_unmap();
+    return pd_phys;
+}
+
 void map_page(uint32_t virt, uint32_t phys, uint32_t flags) {
     uint32_t *pd = get_current_pd();
     uint32_t pd_index = virt >> 22;

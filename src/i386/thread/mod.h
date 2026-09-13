@@ -13,10 +13,11 @@ typedef struct {
 } thread_context_t;
 
 typedef struct {
+    uint32_t pd_addr;
+    uint32_t* esp;
     uint32_t id;
     thread_state_t state;
     void* stack_limit;
-    uint32_t* esp;
 } thread_t;
 
 extern thread_t* current_thread;

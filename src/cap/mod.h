@@ -4,11 +4,6 @@
 #include "stdint.h"
 #define CNODE_SLOTS 256
 
-enum cap_type {
-    CAP_NONE,
-    CAP_UNTYPED,
-};
-
 struct cap_frame {
     uint32_t addr;
     uint32_t size;

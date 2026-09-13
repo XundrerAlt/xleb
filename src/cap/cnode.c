@@ -2,12 +2,13 @@
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 #include "stdint.h"
 #include "mod.h"
+#include "mm/mod.h"
 
 int cnode_add(struct cnode *cnode, struct cap *cap) {
     if (!cnode || !cap) return -1;
 
     for (uint32_t i = 0; i < cnode->size; i++) {
-        if (cnode->slots[i].type == CAP_NONE) {
+        if (cnode->slots[i].type == OBJ_NONE) {
             cnode->slots[i] = *cap;
             return i;
         }
@@ -18,7 +19,7 @@ int cnode_add(struct cnode *cnode, struct cap *cap) {
 struct cap *cnode_find(struct cnode *cnode, uint32_t index) {
     if (!cnode) return 0;
     if (index >= cnode->size) return 0;
-    if (cnode->slots[index].type == CAP_NONE) return 0;
+    if (cnode->slots[index].type == OBJ_NONE) return 0;
     return &cnode->slots[index];
 }
 
@@ -26,7 +27,7 @@ void cnode_remove(struct cnode *cnode, uint32_t index) {
     if (!cnode) return;
     if (index >= cnode->size) return;
 
-    cnode->slots[index].type = CAP_NONE;
+    cnode->slots[index].type = OBJ_NONE;
 }
 
 uint32_t cnode_count(struct cnode *cnode) {
@@ -34,7 +35,7 @@ uint32_t cnode_count(struct cnode *cnode) {
 
     uint32_t count = 0;
     for (uint32_t i = 0; i < cnode->size; i++) {
-        if (cnode->slots[i].type != CAP_NONE) {
+        if (cnode->slots[i].type != OBJ_NONE) {
             count++;
         }
     }

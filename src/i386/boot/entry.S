@@ -71,6 +71,7 @@ boot_page_table:
     .skip 4096
 
 .align 16
+.globl stack_top
 stack_limit:
     .skip 16384
 stack_top:

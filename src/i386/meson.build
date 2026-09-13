@@ -1,5 +1,4 @@
 sources += files(
-    'gdt.S',
     'kinit.c',
 )
 
@@ -9,6 +8,7 @@ endif
 
 subdir('basic_drivers')
 subdir('boot')
+subdir('gdt')
 subdir('interrupt')
 subdir('mm')
 subdir('thread')

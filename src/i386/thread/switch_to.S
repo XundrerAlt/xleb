@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
-.global switch_to
+.globl switch_to
 switch_to:
     pushl %ebp
     pushl %ebx
@@ -11,7 +11,10 @@ switch_to:
     movl 24(%esp), %eax
     movl %esp, (%eax)
 
-    movl 28(%esp), %esp
+    movl 28(%esp), %eax
+    movl (%eax), %ebx
+    movl %ebx, %cr3
+    movl 4(%eax), %esp
 
     popfl
     popl %edi

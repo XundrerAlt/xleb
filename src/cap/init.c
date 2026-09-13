@@ -14,7 +14,7 @@ void cap_init(void) {
     for (int i = 0; i < memory_map.region_count; i++) {
         if (memory_map.regions[i].type != 1) continue;
         struct cap cap;
-        cap.type = CAP_UNTYPED;
+        cap.type = OBJ_UNTYPED;
         cap.data.untyped.base = memory_map.regions[i].start;
         cap.data.untyped.size = memory_map.regions[i].size;
         cap.data.untyped.watermark = 0;
