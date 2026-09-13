@@ -3,6 +3,7 @@
 .section .text
 
 .macro irq n
+.globl irq\n
 irq\n:
     push $0
     push $\n
@@ -53,6 +54,7 @@ irq_common:
     iret
 
 .section .rodata
+.align 4
 .globl irq_entry_table
 irq_entry_table:
     .long irq32, irq33, irq34, irq35, irq36, irq37, irq38, irq39

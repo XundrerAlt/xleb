@@ -3,6 +3,7 @@
 .section .text
 
 .macro isr_no_err n
+.globl isr\n
 isr\n:
     push $0
     push $\n
@@ -10,6 +11,7 @@ isr\n:
 .endm
 
 .macro isr_err n
+.globl isr\n
 isr\n:
     push $\n
     jmp isr_common
@@ -76,6 +78,7 @@ isr_common:
     iret
 
 .section .rodata
+.align 4
 .globl isr_entry_table
 isr_entry_table:
     .long isr0, isr1, isr2, isr3, isr4, isr5, isr6, isr7

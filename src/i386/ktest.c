@@ -35,14 +35,27 @@ void test2_th(void) {
 extern void get_bootloader_protocol(void);
 void ktest(void) {
     INFO("Start testing");
-    INFO("Test 1: Capability");
-    DEBUG("Allocate two pages of untyped memory");
-    uint32_t addr1 = untyped_alloc(4096);
-    DEBUG("Address 1: 0x%x", addr1);
-    uint32_t addr2 = untyped_alloc(4096);
-    DEBUG("Address 2: 0x%x", addr2);
-    if (addr1 && addr2 && (addr2 == (addr1 + 4096))) {
-        test_success();
+    INFO("Test 1: Memory manager");
+    DEBUG("Allocate 4 bytes of untyped memory");
+    uint32_t addr = untyped_alloc(4);
+    DEBUG("Address: 0x%x", addr);
+    if (addr) {
+        uint32_t *virt_addr = temp_map(addr);
+        if (!virt_addr) {
+            ERROR("temp_map failed");
+            test_failed();
+        } else {
+            *virt_addr = 0xDEADBEEF;
+            DEBUG("Written: 0x%x", *virt_addr);
+            if (*virt_addr == 0xDEADBEEF) {
+                DEBUG("Read/Write works");
+                test_success();
+            } else {
+                ERROR("Read/Write failed");
+                test_failed();
+            }
+            temp_unmap();
+        }
     } else {
         test_failed();
     }

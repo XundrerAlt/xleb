@@ -19,8 +19,8 @@ struct idt_ptr {
 } __attribute__((packed));
 
 typedef struct {
-    uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
     uint32_t gs, fs, es, ds;
+    uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
     uint32_t int_no, err_code;
     uint32_t eip, cs, eflags, user_esp, user_ss;
 } __attribute__((packed)) regs_t;

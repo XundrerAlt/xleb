@@ -7,5 +7,6 @@
 memory_map_t memory_map;
 
 void mm_init(void) {
-    INFO("memory manager: hello world (todo)");
+    temp_map_init();
+    INFO("memory manager: hello world");
 }

@@ -11,10 +11,10 @@ extern void get_bootloader_protocol(void);
 void kinit(void) {
     interrupt_init();
     get_bootloader_protocol();
+    cap_init();
     mm_init();
     timer_init();
     //scheduler_init();
-    cap_init();
 #ifdef ENABLE_TESTS
     extern void ktest(void);
     ktest();
