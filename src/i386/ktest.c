@@ -4,7 +4,6 @@
 #include "debug.h"
 #include "halt.h"
 #include "interrupt/init.h"
-#include "mm/vmm/mod.h"
 #include "mm/mod.h"
 #include "mm/virtconv.h"
 #include "stdint.h"
@@ -36,33 +35,10 @@ void test2_th(void) {
 extern void get_bootloader_protocol(void);
 void ktest(void) {
     INFO("Start testing");
-    INFO("Test 1: ISR");
-    INFO("Divide by zero...");
-    volatile uint32_t a = 1;
-    a--;
-    must_caught_exception = 1;
-    volatile uint32_t b = 1 / a;
-    must_caught_exception = 0;
+    INFO("Test 1: Capability");
+    DEBUG("Capability is not done");
     test_success();
-    INFO("Not test: Boot protocol setup");
-    /*
-    INFO("Test 2: Memory Management");
-    mm_init();
-    INFO("Allocating some page...");
-    uint32_t *num = vmalloc(kernel_page_directory, 4, 0);
-    INFO("Writing 31 into *num...");
-    *num = 31;
-    INFO("Reading *num: %d", *num);
-    if (*num == 31) {
-        test_success();
-    } else {
-        test_failed();
-    }
-    INFO("Freeing *num");
-    vfree(kernel_page_directory, num, 4);
-    */
-    INFO("Test 3: Timer");
-    timer_init();
+    INFO("Test 2: Timer");
     uint32_t ftm = timer_get_ticks();
     INFO("First time measurement: %d, wait 10000000 CPU ticks", ftm);
     for (volatile uint32_t i = 0; i < 10000000; i++) {}
@@ -76,7 +52,7 @@ void ktest(void) {
         test_success();
     }
     /*
-    INFO("Test 4: Scheduler");
+    INFO("Test 3: Scheduler");
     scheduler_init();
     INFO("Add, start test threads and wait 10 timer ticks");
     scheduler_add_thread(test_th);

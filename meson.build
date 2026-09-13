@@ -8,12 +8,14 @@ project('xleb', 'c',
     ]
 )
 
+src_dir = meson.project_source_root() / 'src'
 add_project_arguments(
     '-ffreestanding',
     '-nostdlib',
     '-fno-pic',
     '-fno-pie',
     '-fno-stack-protector',
+    '-fmacro-prefix-map=' + src_dir + '/=',
     language: 'c',
 )
 

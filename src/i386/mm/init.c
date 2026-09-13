@@ -2,14 +2,10 @@
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 #include "debug.h"
 #include "halt.h"
-#include "mm/kheap/mod.h"
 #include "mm/mod.h"
-#include "mm/ppage/mod.h"
-#include "mm/vmm/lmem.h"
+
+memory_map_t memory_map;
 
 void mm_init(void) {
-    INFO("memory manager: hello world");
-    map_lmem();
-    ppage_init();
-    kheap_init();
+    INFO("memory manager: hello world (todo)");
 }

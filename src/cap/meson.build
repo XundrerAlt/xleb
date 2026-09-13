@@ -1,5 +1,4 @@
 sources += files(
-    'free.c',
+    'cnode.c',
     'init.c',
-    'malloc.c',
 )

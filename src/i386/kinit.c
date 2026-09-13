@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 #include "basic_drivers/timer/mod.h"
+#include "cap/mod.h"
 #include "interrupt/init.h"
 #include "mm/mod.h"
 #include "stdint.h"
@@ -13,6 +14,7 @@ void kinit(void) {
     mm_init();
     timer_init();
     //scheduler_init();
+    cap_init();
 #ifdef ENABLE_TESTS
     extern void ktest(void);
     ktest();
