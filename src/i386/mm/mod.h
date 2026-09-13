@@ -29,3 +29,4 @@ typedef struct {
 extern memory_map_t memory_map;
 
 void mm_init(void);
+uint32_t untyped_alloc(uint32_t size);

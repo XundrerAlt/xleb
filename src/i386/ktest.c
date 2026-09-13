@@ -36,8 +36,16 @@ extern void get_bootloader_protocol(void);
 void ktest(void) {
     INFO("Start testing");
     INFO("Test 1: Capability");
-    DEBUG("Capability is not done");
-    test_success();
+    DEBUG("Allocate two pages of untyped memory");
+    uint32_t addr1 = untyped_alloc(4096);
+    DEBUG("Address 1: 0x%x", addr1);
+    uint32_t addr2 = untyped_alloc(4096);
+    DEBUG("Address 2: 0x%x", addr2);
+    if (addr1 && addr2 && (addr2 == (addr1 + 4096))) {
+        test_success();
+    } else {
+        test_failed();
+    }
     INFO("Test 2: Timer");
     uint32_t ftm = timer_get_ticks();
     INFO("First time measurement: %d, wait 10000000 CPU ticks", ftm);

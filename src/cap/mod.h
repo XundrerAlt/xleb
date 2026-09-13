@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 #pragma once
+#include "stdint.h"
 #define CNODE_SLOTS 256
 
 enum cap_type {
