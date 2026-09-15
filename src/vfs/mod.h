@@ -35,5 +35,7 @@ void vfs_inode_unref(vfs_inode_t *inode);
 int vfs_inode_add_child(vfs_inode_t *dir, vfs_inode_t *child);
 vfs_inode_t *vfs_inode_find_child(vfs_inode_t *dir, const char *name);
 vfs_inode_t *vfs_lookup(vfs_inode_t *root, const char *path);
+int vfs_read(vfs_inode_t *inode, uint32_t offset, void *buf, uint32_t size);
+int vfs_write(vfs_inode_t *inode, uint32_t offset, const void *buf, uint32_t size);
 
 void vfs_init(void);

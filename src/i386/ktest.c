@@ -112,19 +112,18 @@ void ktest(void) {
     }
     INFO("Test 4: VFS");
     vfs_namespace_t *ns = vfs_ns_create();
-    vfs_inode_t *hello = vfs_inode_alloc(VFS_FILE, "hello");
-    vfs_inode_add_child(ns->root, hello);
+    vfs_inode_t *f = vfs_inode_alloc(VFS_FILE, "hello");
+    vfs_inode_add_child(ns->root, f);
 
-    const char *msg = "hello from ramfs!";
-    hello->data = kmalloc(strlen(msg) + 1);
-    strcpy((char*)hello->data, msg);
-    hello->size = strlen(msg);
+    vfs_write(f, 0, "hello", 5);
+    vfs_write(f, 5, " world", 6);
+    DEBUG("size=%u data='%s'", f->size, (char*)f->data);
 
-    vfs_inode_t *found = vfs_lookup(ns->root, "/hello");
-    DEBUG("vfs: lookup /hello -> id=%u name='%s' size=%u",
-          found->id, found->name, found->size);
-    DEBUG("vfs: data='%s'", (char*)found->data);
-    if (!strcmp((char*)found->data, msg)) {
+    char buf[16];
+    int n = vfs_read(f, 0, buf, 16);
+    DEBUG("read %d: '%s'", n, buf);
+
+    if (n == 11 && strcmp("hello world", buf) == 0) {
         test_success();
     } else {
         test_failed();
