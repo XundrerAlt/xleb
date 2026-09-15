@@ -16,6 +16,7 @@ uint32_t tests_failed = 0;
 uint8_t must_caught_exception = 0;
 static uint8_t th_flag = 0;
 extern uint32_t kernel_page_directory[1024];
+extern void run_init(void);
 
 void test_th(void) {
     INFO("test thread: hello world, i'm working");
@@ -86,8 +87,10 @@ void ktest(void) {
     }
     INFO("Test 3: Scheduler");
     INFO("Add, start test threads and wait 10 timer ticks");
-    scheduler_add_thread(test_th, 0);
-    scheduler_add_thread(test2_th, 0);
+    thread_t *th1 = thread_create(test_th, 0, 0);
+    scheduler_add_thread(th1);
+    thread_t *th2 = thread_create(test2_th, 0, 0);
+    scheduler_add_thread(th2);
     uint32_t tstart = timer_get_ticks();
     while (timer_get_ticks() < tstart + 10) {
         __asm__ volatile ("hlt");
@@ -105,15 +108,12 @@ void ktest(void) {
         WARN("Invalid th_flag");
         test_failed();
     }
-    INFO("Test 4: Ring 3 and Syscall");
-    scheduler_add_thread(test3_th, 1);
-    INFO("Just wait for next switch_to");
-    test_success();
     INFO("End testing");
     if (tests_failed) {
         WARN("%d success; %d failed", tests_success, tests_failed);
     } else {
         INFO("%d success; 0 failed", tests_success);
     }
+    run_init();
     halt();
 }

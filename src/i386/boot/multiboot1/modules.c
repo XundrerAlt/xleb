@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
+#include "boot/module.h"
 #include "boot/multiboot1/info.h"
 #include "boot/multiboot1/mod.h"
 #include "mm/virtconv.h"
@@ -8,6 +9,9 @@
 #include "string.h"
 
 #define MMAP_ENTRY_SIZE 20
+
+module_t modules[MAX_MODULES];
+uint32_t module_count = 0;
 
 static int module_in_region(uint64_t mod_start, uint64_t mod_end, 
                              uint64_t region_start, uint64_t region_end) {
@@ -32,7 +36,7 @@ static void process_single_module(multiboot_memory_map_t *mmap, uint32_t *mmap_e
     uint64_t mod_end = mod->mod_end;
     
     print_module_info(mod_index, mod);
-    
+    module_add((uint32_t)mod_start, (uint32_t)mod_end, mod->cmdline);
     multiboot_memory_map_t *entry = mmap;
     
     while ((uint32_t)entry < *mmap_end) {
@@ -89,4 +93,24 @@ void process_modules(multiboot_info_t *mbi) {
     for (uint32_t i = 0; i < mbi->mods_count; i++) {
         process_single_module(mmap, &mmap_end, &mbi->mmap_length, &mods[i], i);
     }
+}
+
+// module table
+
+void module_add(uint32_t start, uint32_t end, uint32_t cmdline) {
+    if (module_count >= MAX_MODULES) {
+        WARN("module_add: too many modules (max %d)", MAX_MODULES);
+        return;
+    }
+    module_t *m = &modules[module_count++];
+    m->start = start;
+    m->end = end;
+    m->size = end - start;
+    m->cmdline = cmdline;
+    m->name = 0;
+}
+
+module_t *module_get(uint32_t index) {
+    if (index >= module_count) return 0;
+    return &modules[index];
 }

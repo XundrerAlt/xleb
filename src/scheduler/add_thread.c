@@ -5,8 +5,7 @@
 #include "mod.h"
 #include "thread/mod.h"
 
-void scheduler_add_thread(void (*entry)(), uint8_t is_user) {
-    thread_t* thread = thread_create(entry, is_user);
+void scheduler_add_thread(thread_t *thread) {
     if (thread) {
         thread_queue[thread_count++] = thread;
     }

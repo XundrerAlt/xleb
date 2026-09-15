@@ -1,5 +1,6 @@
 sources += files(
     'kinit.c',
+    'run_init.c',
 )
 
 if get_option('enable_tests')

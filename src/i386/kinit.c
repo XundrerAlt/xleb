@@ -2,10 +2,12 @@
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 #include "basic_drivers/timer/mod.h"
 #include "cap/mod.h"
+#include "halt.h"
 #include "interrupt/init.h"
 #include "mm/mod.h"
 #include "stdint.h"
 #include "scheduler/mod.h"
+#include "thread/mod.h"
 
 extern void get_bootloader_protocol(void);
 void kinit(void) {
@@ -17,9 +19,11 @@ void kinit(void) {
     scheduler_init();
 #ifdef ENABLE_TESTS
     extern void ktest(void);
-    scheduler_add_thread(ktest, 0);
+    thread_t *ktest_th = thread_create(ktest, 0, 0);
+    scheduler_add_thread(ktest_th);
 #else
-    extern void kmain(void);
-    scheduler_add_thread(kmain, 0);
+    extern void run_init(void);
+    run_init();
 #endif
+    halt();
 }
