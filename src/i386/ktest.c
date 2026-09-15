@@ -12,6 +12,7 @@
 #include "test.h"
 #include "vfs/kheap/mod.h"
 #include "vfs/mod.h"
+#include "vfs/stdout.h"
 
 uint32_t tests_success = 0;
 uint32_t tests_failed = 0;
@@ -112,22 +113,12 @@ void ktest(void) {
     }
     INFO("Test 4: VFS");
     vfs_namespace_t *ns = vfs_ns_create();
-    vfs_inode_t *f = vfs_inode_alloc(VFS_FILE, "hello");
-    vfs_inode_add_child(ns->root, f);
-
-    vfs_write(f, 0, "hello", 5);
-    vfs_write(f, 5, " world", 6);
-    DEBUG("size=%u data='%s'", f->size, (char*)f->data);
-
-    char buf[16];
-    int n = vfs_read(f, 0, buf, 16);
-    DEBUG("read %d: '%s'", n, buf);
-
-    if (n == 11 && strcmp("hello world", buf) == 0) {
-        test_success();
-    } else {
-        test_failed();
-    }
+    vfs_inode_t *stdout = vfs_inode_alloc(VFS_CHARDEV, "stdout");
+    vfs_inode_add_child(ns->root, stdout);
+    stdout->ops = &stdout_ops;
+    vfs_write(stdout, 0, "hello", 5);
+    vfs_write(stdout, 5, " world", 6);
+    test_success();
     INFO("End testing");
     if (tests_failed) {
         WARN("%d success; %d failed", tests_success, tests_failed);

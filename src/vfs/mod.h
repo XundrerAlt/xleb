@@ -7,7 +7,11 @@
 typedef enum {
     VFS_FILE,
     VFS_DIR,
+    VFS_CHARDEV,
 } vfs_type_t;
+
+typedef struct vfs_inode vfs_inode_t;
+struct chardev_ops;
 
 typedef struct vfs_inode {
     uint32_t id;
@@ -17,10 +21,16 @@ typedef struct vfs_inode {
     uint8_t *data;
     void *fs_data;
     char name[VFS_NAME_MAX];
+    struct chardev_ops *ops;
     struct vfs_inode *parent;
     struct vfs_inode *children;
     struct vfs_inode *next;
 } vfs_inode_t;
+
+struct chardev_ops {
+    int (*read)(vfs_inode_t *inode, uint32_t offset, void *buf, uint32_t size);
+    int (*write)(vfs_inode_t *inode, uint32_t offset, const void *buf, uint32_t size);
+};
 
 typedef struct vfs_namespace {
     struct vfs_inode *root;

@@ -7,6 +7,9 @@
 
 int vfs_read(vfs_inode_t *inode, uint32_t offset, void *buf, uint32_t size) {
     if (!inode || !buf) return -1;
+    if (inode->type == VFS_CHARDEV && inode->ops && inode->ops->read) {
+        return inode->ops->read(inode, offset, buf, size);
+    }
     if (inode->type != VFS_FILE) {
         ERROR("read: '%s' is not a file", inode->name);
         return -1;
