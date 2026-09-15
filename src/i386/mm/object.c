@@ -28,7 +28,7 @@ uint32_t retype(obj_type_t type, uint32_t size) {
         return 0;
     }
     memset(virt, 0, needed);
-    temp_unmap();
+    temp_unmap(virt);
     struct cap new_cap;
     new_cap.type = type;
     switch (type) {

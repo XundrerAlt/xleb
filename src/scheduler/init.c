@@ -18,7 +18,7 @@ void idle(void) {
 
 void scheduler_init(void) {
     INFO("scheduler: hello world");
-    current_thread = thread_create(idle);
-    current_thread->state = THREAD_RUNNING;
+    thread_t* idle_thread = thread_create(idle, 0);
+    idle_thread->state = THREAD_RUNNING;
     thread_queue[thread_count++] = current_thread;
 }

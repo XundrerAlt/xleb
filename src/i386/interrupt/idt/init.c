@@ -17,7 +17,7 @@ void interrupt_init(void) {
     for (int i = 0; i < 16; i++) {
         idt_set_gate(32 + i, irq_entry_table[i], 0x08, 0x8E);
     }
-    idt_set_gate(0x80, (uint32_t)syscall_entry, 0x08, 0x8E); // for ring 0 yet
+    idt_set_gate(0x80, (uint32_t)syscall_entry, 0x08, 0xEE);
     pic_remap(32, 40);
     pic_mask_all();
     INFO("IRQ: hello world");

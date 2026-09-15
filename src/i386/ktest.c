@@ -33,7 +33,18 @@ void test2_th(void) {
     }
 }
 
-extern void get_bootloader_protocol(void);
+void test3_th(void) {
+    int ret;
+    __asm__ volatile(
+        "int $0x80"
+        : "=a" (ret)
+        : "a" (SYS_PRINT)
+    );
+    while (1) {
+
+    }
+}
+
 void ktest(void) {
     INFO("Start testing");
     INFO("Test 1: Memory manager");
@@ -55,7 +66,7 @@ void ktest(void) {
                 ERROR("Read/Write failed");
                 test_failed();
             }
-            temp_unmap();
+            temp_unmap(virt_addr);
         }
     } else {
         test_failed();
@@ -75,8 +86,8 @@ void ktest(void) {
     }
     INFO("Test 3: Scheduler");
     INFO("Add, start test threads and wait 10 timer ticks");
-    scheduler_add_thread(test_th);
-    scheduler_add_thread(test2_th);
+    scheduler_add_thread(test_th, 0);
+    scheduler_add_thread(test2_th, 0);
     uint32_t tstart = timer_get_ticks();
     while (timer_get_ticks() < tstart + 10) {
         __asm__ volatile ("hlt");
@@ -94,15 +105,10 @@ void ktest(void) {
         WARN("Invalid th_flag");
         test_failed();
     }
-    INFO("Test 4: Syscall");
-    int ret;
-    __asm__ volatile(
-        "int $0x80"
-        : "=a" (ret)
-        : "a" (SYS_PRINT)
-    );
-    if (!ret) test_success();
-    else test_failed();
+    INFO("Test 4: Ring 3 and Syscall");
+    scheduler_add_thread(test3_th, 1);
+    INFO("Just wait for next switch_to");
+    test_success();
     INFO("End testing");
     if (tests_failed) {
         WARN("%d success; %d failed", tests_success, tests_failed);

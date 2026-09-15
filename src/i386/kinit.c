@@ -17,9 +17,9 @@ void kinit(void) {
     scheduler_init();
 #ifdef ENABLE_TESTS
     extern void ktest(void);
-    ktest();
+    scheduler_add_thread(ktest, 0);
 #else
     extern void kmain(void);
-    kmain();
+    scheduler_add_thread(kmain, 0);
 #endif
 }

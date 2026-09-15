@@ -23,10 +23,10 @@ b() {
     ninja -C build
 }
 r() {
-    qemu-system-$ARCH -kernel build/kernel -serial stdio
+    qemu-system-$ARCH -kernel build/kernel -serial stdio -no-reboot
 }
 rd() {
-    qemu-system-$ARCH -kernel build/kernel -serial stdio -s -S
+    qemu-system-$ARCH -kernel build/kernel -serial stdio -no-reboot -s -S
 }
 br() {
     b

@@ -17,6 +17,7 @@ struct tss_entry {
     uint16_t trap;
     uint16_t iomap_base;
 } __attribute__((packed));
+_Static_assert(sizeof(struct tss_entry) == 104, "TSS must be 104 bytes");
 
 extern struct tss_entry tss;
 void tss_init(void);
