@@ -24,7 +24,7 @@ void kinit(void) {
     scheduler_init();
 #ifdef ENABLE_TESTS
     extern void ktest(void);
-    thread_t *ktest_th = thread_create(ktest, 0, 0);
+    thread_t *ktest_th = thread_create(ktest, 0, 0, 0);
     scheduler_add_thread(ktest_th);
 #else
     extern void run_init(void);

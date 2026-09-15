@@ -10,6 +10,8 @@
 #include "stdint.h"
 #include "scheduler/mod.h"
 #include "test.h"
+#include "vfs/kheap/mod.h"
+#include "vfs/mod.h"
 
 uint32_t tests_success = 0;
 uint32_t tests_failed = 0;
@@ -106,6 +108,25 @@ void ktest(void) {
         test_failed();
     } else {
         WARN("Invalid th_flag");
+        test_failed();
+    }
+    INFO("Test 4: VFS");
+    vfs_namespace_t *ns = vfs_ns_create();
+    vfs_inode_t *hello = vfs_inode_alloc(VFS_FILE, "hello");
+    vfs_inode_add_child(ns->root, hello);
+
+    const char *msg = "hello from ramfs!";
+    hello->data = kmalloc(strlen(msg) + 1);
+    strcpy((char*)hello->data, msg);
+    hello->size = strlen(msg);
+
+    vfs_inode_t *found = vfs_lookup(ns->root, "/hello");
+    DEBUG("vfs: lookup /hello -> id=%u name='%s' size=%u",
+          found->id, found->name, found->size);
+    DEBUG("vfs: data='%s'", (char*)found->data);
+    if (!strcmp((char*)found->data, msg)) {
+        test_success();
+    } else {
         test_failed();
     }
     INFO("End testing");

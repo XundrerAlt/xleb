@@ -9,6 +9,7 @@
 typedef struct space {
     uint32_t id;
     uint32_t pd_addr;
+    vfs_namespace_t *ns;
 } space_t;
 
 space_t *space_create(void);
