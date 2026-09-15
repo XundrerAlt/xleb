@@ -87,9 +87,9 @@ void ktest(void) {
     }
     INFO("Test 3: Scheduler");
     INFO("Add, start test threads and wait 10 timer ticks");
-    thread_t *th1 = thread_create(test_th, 0, 0);
+    thread_t *th1 = thread_create(test_th, 0, 0, NULL);
     scheduler_add_thread(th1);
-    thread_t *th2 = thread_create(test2_th, 0, 0);
+    thread_t *th2 = thread_create(test2_th, 0, 0, NULL);
     scheduler_add_thread(th2);
     uint32_t tstart = timer_get_ticks();
     while (timer_get_ticks() < tstart + 10) {

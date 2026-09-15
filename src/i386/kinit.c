@@ -22,7 +22,6 @@ void kinit(void) {
     mm_init();
     timer_init();
     scheduler_init();
-    vfs_init();
 #ifdef ENABLE_TESTS
     extern void ktest(void);
     thread_t *ktest_th = thread_create(ktest, 0, 0);

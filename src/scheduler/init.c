@@ -18,7 +18,7 @@ void idle(void) {
 
 void scheduler_init(void) {
     INFO("scheduler: hello world");
-    thread_t *idle_thread = thread_create(idle, 0, 0);
+    thread_t *idle_thread = thread_create(idle, 0, 0, NULL);
     if (!idle_thread) {
         ERROR("scheduler_init: failed to create idle");
         halt();

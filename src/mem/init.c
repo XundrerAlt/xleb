@@ -3,6 +3,7 @@
 #include "debug.h"
 #include "mod.h"
 #include "mm/mod.h"
+#include "vfs/kheap/mod.h"
 
 struct mspace *mspace = 0;
 memory_map_t memory_map;
@@ -30,5 +31,6 @@ void mm_init(void) {
              mem.data.untyped.size / 1024);
     }
     temp_map_init();
+    kheap_init();
     INFO("memory manager: hello world");
 }

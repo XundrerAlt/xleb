@@ -6,12 +6,13 @@
 #include "stddef.h"
 #include "mod.h"
 #include "string.h"
+#include "space/mod.h"
 
 #define STACK_SIZE 4096
 #define USER_STACK_ADDR 0x40000000
 #define USER_CODE_ADDR 0x41000000
 
-thread_t* thread_create(void (*entry)(), uint8_t is_user, uint32_t prog_size) {
+thread_t* thread_create(void (*entry)(), uint8_t is_user, uint32_t prog_size, space_t *space) {
     uint32_t thread_addr = retype(OBJ_THREAD, 0);
     if (!thread_addr) {
         ERROR("thread_create: retype TCB failed");
@@ -19,10 +20,10 @@ thread_t* thread_create(void (*entry)(), uint8_t is_user, uint32_t prog_size) {
     }
     thread_t *thread = (thread_t*)PHYS_TO_VIRT(thread_addr);
     memset(thread, 0, sizeof(thread_t));
-    thread->pd_addr = create_page_directory();
-    if (!thread->pd_addr) {
-        ERROR("thread_create: create PD failed");
-        return 0;
+    if (space) {
+        thread->space = space;
+    } else {
+        thread->space = space_create();
     }
     uint32_t kstack_phys = untyped_alloc(STACK_SIZE);
     if (!kstack_phys) {
@@ -34,7 +35,7 @@ thread_t* thread_create(void (*entry)(), uint8_t is_user, uint32_t prog_size) {
     thread->kernel_stack_top = (void*)((kstack_virt + STACK_SIZE) & ~0xF);
     if (is_user) {
         uint32_t ustack_phys = untyped_alloc(STACK_SIZE);
-        map_page(thread->pd_addr, USER_STACK_ADDR, ustack_phys, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
+        map_page(thread->space->pd_addr, USER_STACK_ADDR, ustack_phys, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
 
         uint32_t blob_phys = (uint32_t)entry;
         uint32_t pages = (prog_size + 0xFFF) / 0x1000;
@@ -48,7 +49,7 @@ thread_t* thread_create(void (*entry)(), uint8_t is_user, uint32_t prog_size) {
             memset((uint8_t*)tmp + copy, 0, 0x1000 - copy);
             temp_unmap(src);
             temp_unmap(tmp);
-            map_page(thread->pd_addr, USER_CODE_ADDR + off, phys, PAGE_PRESENT | PAGE_USER);
+            map_page(thread->space->pd_addr, USER_CODE_ADDR + off, phys, PAGE_PRESENT | PAGE_USER);
         }
 
         uint32_t *ustack_tmp = (uint32_t*)temp_map(ustack_phys);

@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 #pragma once
 #include "stdint.h"
+#include "space/mod.h"
 
 typedef enum {
     THREAD_READY,
@@ -22,7 +23,7 @@ typedef struct {
 
 typedef struct {
     thread_context_t ctx;
-    uint32_t pd_addr;
+    space_t* space;
     uint32_t id;
     thread_state_t state;
     void* stack_limit;
@@ -32,7 +33,7 @@ typedef struct {
 } thread_t;
 
 extern thread_t* current_thread;
-thread_t* thread_create(void (*entry)(), uint8_t is_user, uint32_t prog_size);
+thread_t* thread_create(void (*entry)(), uint8_t is_user, uint32_t prog_size, space_t *space);
 void switch_to(thread_t *prev, thread_t *next);
 void switch_to_first(thread_t *next);
 void archspec_schedule(thread_t *next);

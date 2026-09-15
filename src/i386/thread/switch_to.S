@@ -8,8 +8,9 @@
 .set CTX_ESP, 20
 .set CTX_EFLAGS, 24
 .set CTX_SS, 28
-.set PD_ADDR, 32
-.set KERNEL_CS,  0x08
+.set SPACE, 32
+.set SPACE_PD_ADDR, 4
+.set KERNEL_CS, 0x08
 
 .globl switch_to
 switch_to:
@@ -27,9 +28,15 @@ switch_to:
     movl %ecx, 8(%esp)
     movl %esp, CTX_ESP(%eax)
 
-    movl PD_ADDR(%edx), %ecx
+    movl SPACE(%eax), %ecx
+    cmpl SPACE(%edx), %ecx
+    je 1f
+
+    movl SPACE(%edx), %ecx
+    movl SPACE_PD_ADDR(%ecx), %ecx
     movl %ecx, %cr3
 
+1:
     movl CTX_EDI(%edx), %edi
     movl CTX_ESI(%edx), %esi
     movl CTX_EBX(%edx), %ebx
@@ -40,7 +47,8 @@ switch_to:
 .globl switch_to_first
 switch_to_first:
     movl 4(%esp), %edx
-    movl PD_ADDR(%edx), %ecx
+    movl SPACE(%edx), %ecx
+    movl SPACE_PD_ADDR(%ecx), %ecx
     movl %ecx, %cr3
     movl CTX_EDI(%edx), %edi
     movl CTX_ESI(%edx), %esi

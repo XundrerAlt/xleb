@@ -18,7 +18,7 @@ void run_init(void) {
     DEBUG("loading module 0: 0x%x - 0x%x (%u bytes)",
           m->start, m->end, m->size);
 
-    thread_t *init = thread_create((void*)m->start, 1, m->size);
+    thread_t *init = thread_create((void*)m->start, 1, m->size, NULL);
     if (!init) {
         ERROR("failed to create init thread");
         halt();
