@@ -10,9 +10,15 @@
 #include "vfs/mod.h"
 
 extern void get_bootloader_protocol(void);
+extern uint32_t kernel_page_directory[1024];
+
 void kinit(void) {
     interrupt_init();
     get_bootloader_protocol();
+    for (int i = 768; i < 896; i++) {
+        kernel_page_directory[i] = (i - 768) * 0x400000 | 0x83;
+    }
+    __asm__ volatile ("mov %%cr3, %%eax; mov %%eax, %%cr3" ::: "eax");
     mm_init();
     timer_init();
     scheduler_init();

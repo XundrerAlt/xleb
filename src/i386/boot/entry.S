@@ -33,6 +33,10 @@ _entry:
     movl %eax, 0(%edi)
     movl %eax, (768 * 4)(%edi)
 
+    movl %cr4, %eax
+    orl $(1 << 4), %eax
+    movl %eax, %cr4
+
     movl %cr0, %eax
     orl $0x80000000, %eax
     movl %eax, %cr0
