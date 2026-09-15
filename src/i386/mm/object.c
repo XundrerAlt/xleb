@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
-#include "cap/mod.h"
+#include "mem/mod.h"
 #include "debug.h"
 #include "mod.h"
 #include "stdint.h"
@@ -29,19 +29,19 @@ uint32_t retype(obj_type_t type, uint32_t size) {
     }
     memset(virt, 0, needed);
     temp_unmap(virt);
-    struct cap new_cap;
-    new_cap.type = type;
+    struct mem new_mem;
+    new_mem.type = type;
     switch (type) {
         case OBJ_FRAME:
-            new_cap.data.frame.addr = addr;
-            new_cap.data.frame.size = 1 << size;
+            new_mem.data.frame.addr = addr;
+            new_mem.data.frame.size = 1 << size;
             break;
         default:
             break;
     }
-    int index = cnode_add(root_cnode, &new_cap);
+    int index = mspace_add(mspace, &new_mem);
     if (index < 0) {
-        ERROR("retype: cnode full");
+        ERROR("retype: mspace full");
         return 0;
     }
     return addr;

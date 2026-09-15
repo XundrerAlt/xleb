@@ -4,7 +4,7 @@
 #include "halt.h"
 #include "mm/mod.h"
 #include "mm/virtconv.h"
-#include "cap/mod.h"
+#include "mem/mod.h"
 #include "string.h"
 
 #define TEMP_WINDOWS 16

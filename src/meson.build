@@ -1,3 +1,4 @@
 subdir(arch)
-subdir('cap')
+subdir('mem')
 subdir('scheduler')
+subdir('vfs')
