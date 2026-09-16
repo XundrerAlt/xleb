@@ -34,6 +34,7 @@ typedef struct {
 
 extern thread_t* current_thread;
 thread_t* thread_create(void (*entry)(), uint8_t is_user, uint32_t prog_size, space_t *space);
+void thread_destroy(thread_t *target);
 void switch_to(thread_t *prev, thread_t *next);
 void switch_to_first(thread_t *next);
 void archspec_schedule(thread_t *next);

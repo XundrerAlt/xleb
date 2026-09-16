@@ -16,6 +16,7 @@ vfs_inode_t *vfs_inode_alloc(vfs_type_t type, const char *name) {
     memset(inode, 0, sizeof(vfs_inode_t));
     inode->id = next_inode_id++;
     inode->type = type;
+    inode->refcount = 1;
     if (name) {
         strncpy(inode->name, name, VFS_NAME_MAX - 1);
         inode->name[VFS_NAME_MAX - 1] = 0;
@@ -25,12 +26,6 @@ vfs_inode_t *vfs_inode_alloc(vfs_type_t type, const char *name) {
 
 void vfs_inode_free(vfs_inode_t *inode) {
     if (!inode) return;
-    vfs_inode_t *child = inode->children;
-    while (child) {
-        vfs_inode_t *next = child->next;
-        vfs_inode_free(child);
-        child = next;
-    }
     if (inode->data) kfree(inode->data);
     kfree(inode);
 }
@@ -43,7 +38,7 @@ void vfs_inode_ref(vfs_inode_t *inode) {
 void vfs_inode_unref(vfs_inode_t *inode) {
     if (!inode) return;
     if (inode->refcount == 0) {
-        WARN("vfs_inode_unref: refcount already 0 (id=%u)", inode->id);
+        WARN("inode unref: refcount already 0 (id=%u)", inode->id);
         return;
     }
     inode->refcount--;
@@ -55,7 +50,7 @@ void vfs_inode_unref(vfs_inode_t *inode) {
 int vfs_inode_add_child(vfs_inode_t *dir, vfs_inode_t *child) {
     if (!dir || !child) return -1;
     if (dir->type != VFS_DIR) {
-        ERROR("vfs_inode_add_child: '%s' is not a directory", dir->name);
+        ERROR("inode add child: '%s' is not a directory", dir->name);
         return -1;
     }
 

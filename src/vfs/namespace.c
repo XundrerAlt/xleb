@@ -24,3 +24,12 @@ vfs_namespace_t *vfs_ns_create(void) {
     ns->root = vfs_inode_alloc(VFS_DIR, "/");
     return ns;
 }
+
+void vfs_ns_destroy(vfs_namespace_t *ns) {
+    if (!ns) return;
+    if (ns->root) {
+        vfs_inode_unref(ns->root);
+        ns->root = 0;
+    }
+    kfree(ns);
+}

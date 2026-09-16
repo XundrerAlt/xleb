@@ -5,12 +5,18 @@
 #include "mod.h"
 #include "space/mod.h"
 #include "scheduler/mod.h"
+#include "thread/mod.h"
 #include "vfs/mod.h"
 
 static int check_user_ptr(uint32_t ptr, uint32_t size) {
     if (ptr >= 0xC0000000) return -1;
     if (ptr + size >= 0xC0000000) return -1;
     return 0;
+}
+
+static void sys_exit(int code) {
+    (void)code;
+    thread_destroy(current_thread);
 }
 
 static int sys_open(const char *path, int flags) {
@@ -46,6 +52,10 @@ void syscall_handler(regs_t *regs) {
     uint32_t arg1 = regs->ecx;
     uint32_t arg2 = regs->edx;
     switch (num) {
+        case SYS_EXIT:
+            sys_exit((int)arg0);
+            regs->eax = 0;
+            break;
         case SYS_OPEN:
             regs->eax = sys_open((const char*)arg0, (int)arg1);
             break;

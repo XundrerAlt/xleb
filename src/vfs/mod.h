@@ -40,6 +40,7 @@ typedef struct vfs_namespace {
 vfs_inode_t *vfs_inode_alloc(vfs_type_t type, const char *name);
 void vfs_inode_free(vfs_inode_t *inode);
 vfs_namespace_t *vfs_ns_create(void);
+void vfs_ns_destroy(vfs_namespace_t *ns);
 
 void vfs_inode_ref(vfs_inode_t *inode);
 void vfs_inode_unref(vfs_inode_t *inode);

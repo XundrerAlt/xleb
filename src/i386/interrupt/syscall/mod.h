@@ -3,6 +3,7 @@
 #pragma once
 
 typedef enum {
+    SYS_EXIT,
     SYS_OPEN,
     SYS_CLOSE,
     SYS_READ,
