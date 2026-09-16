@@ -101,17 +101,33 @@ void ktest(void) {
         test_failed();
     }
     INFO("Test 4: VFS");
-    space_t* space = space_create();
-    vfs_namespace_t *ns = vfs_ns_create();
+    space_t *space = current_thread->space;
+    if (!space || !space->ns) {
+        ERROR("no space or ns");
+        test_failed();
+        return;
+    }
     vfs_inode_t *stdout = vfs_inode_alloc(VFS_CHARDEV, "stdout");
-    vfs_inode_add_child(ns->root, stdout);
+    if (!stdout) { test_failed(); return; }
+    vfs_inode_add_child(space->ns->root, stdout);
     stdout->ops = &stdout_ops;
     int fd = vfs_open(space, "/stdout", 0);
-    vfs_write(space, fd, "hello", 5);
-    vfs_write(space, fd, " world", 6);
-    vfs_close(space, fd);
-    test_success();
-    INFO("End testing");
+    DEBUG("vfs_open: fd=%d", fd);
+    if (fd < 0) {
+        ERROR("open /stdout failed");
+        test_failed();
+        return;
+    }
+    int n1 = vfs_write(space, fd, "hello", 5);
+    int n2 = vfs_write(space, fd, " world", 6);
+    DEBUG("vfs_write: %d, %d", n1, n2);
+    int r = vfs_close(space, fd);
+    DEBUG("vfs_close: %d", r);
+    if (n1 == 5 && n2 == 6 && r == 0) {
+        test_success();
+    } else {
+        test_failed();
+    }
     if (tests_failed) {
         WARN("%d success; %d failed", tests_success, tests_failed);
     } else {
