@@ -22,7 +22,7 @@ typedef struct vfs_inode {
     uint8_t *data;
     void *fs_data;
     char name[VFS_NAME_MAX];
-    struct chardev_ops *ops;
+    const struct chardev_ops *ops;
     struct vfs_inode *parent;
     struct vfs_inode *children;
     struct vfs_inode *next;

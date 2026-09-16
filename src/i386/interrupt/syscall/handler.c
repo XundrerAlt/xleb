@@ -47,6 +47,15 @@ static int sys_write(int fd, const void *buf, uint32_t size) {
     return vfs_write(space, fd, buf, size);
 }
 
+static int sys_space_create(void) {
+    space_t *parent = current_thread->space;
+    space_t *child = space_create();
+    if (!child) return -1;
+    child->parent = parent;
+    DEBUG("child->id = %d", child->id);
+    return child->id;
+}
+
 void syscall_handler(regs_t *regs) {
     uint32_t num = regs->eax;
     uint32_t arg0 = regs->ebx;
@@ -68,6 +77,9 @@ void syscall_handler(regs_t *regs) {
             break;
         case SYS_WRITE:
             regs->eax = sys_write((int)arg0, (const void*)arg1, arg2);
+            break;
+        case SYS_SPACE_CREATE:
+            regs->eax = sys_space_create();
             break;
         default:
             WARN("UNKNOWN SYSCALL (%d)", num);

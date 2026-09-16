@@ -8,4 +8,5 @@ typedef enum {
     SYS_CLOSE,
     SYS_READ,
     SYS_WRITE,
+    SYS_SPACE_CREATE,
 } syscall_type_t;

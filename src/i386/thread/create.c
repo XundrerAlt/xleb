@@ -24,6 +24,7 @@ thread_t* thread_create(void (*entry)(), uint8_t is_user, uint32_t prog_size, sp
         thread->space = space;
     } else {
         thread->space = space_create();
+        thread->space->parent = 0;
     }
     uint32_t kstack_phys = untyped_alloc(STACK_SIZE);
     if (!kstack_phys) {

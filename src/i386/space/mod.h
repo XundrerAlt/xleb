@@ -12,6 +12,7 @@ typedef struct space {
     vfs_namespace_t *ns;
     vfs_ofile_t *fds[MAX_FDS];
     uint32_t fd_count;
+    space_t *parent;
 } space_t;
 
 space_t *space_create(void);
