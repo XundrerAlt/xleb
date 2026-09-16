@@ -8,18 +8,22 @@
 #include "mm/mod.h"
 #include "string.h"
 
-#define MMAP_ENTRY_SIZE 20
+#define MAX_MMAP_ENTRIES  64
+#define MMAP_ENTRY_SIZE   24
 
 module_t modules[MAX_MODULES];
 uint32_t module_count = 0;
 
-static int module_in_region(uint64_t mod_start, uint64_t mod_end, 
-                             uint64_t region_start, uint64_t region_end) {
+static multiboot_memory_map_t mmap_buf[MAX_MMAP_ENTRIES];
+
+static int module_in_region(uint32_t mod_start, uint32_t mod_end,
+                             uint32_t region_start, uint32_t region_end) {
     return mod_start >= region_start && mod_end <= region_end;
 }
+
 static void print_module_info(uint32_t index, multiboot_module_t *mod) {
     uint32_t start = mod->mod_start;
-    uint32_t end = mod->mod_end;
+    uint32_t end   = mod->mod_end;
     INFO("  - module %u:", index);
     INFO("    - address: 0x%x - 0x%x", start, end);
     INFO("    - size: %u bytes", end - start);
@@ -29,85 +33,131 @@ static void print_module_info(uint32_t index, multiboot_module_t *mod) {
         INFO("    - cmdline: (none)");
     }
 }
-static void process_single_module(multiboot_memory_map_t *mmap, uint32_t *mmap_end, 
-                                   uint32_t *mmap_length, multiboot_module_t *mod, 
-                                   uint32_t mod_index) {
-    uint64_t mod_start = mod->mod_start;
-    uint64_t mod_end = mod->mod_end;
-    
+
+static int process_single_module(multiboot_memory_map_t *mmap,
+                                  uint32_t *mmap_end_ptr,
+                                  uint32_t *mmap_length_ptr,
+                                  multiboot_module_t *mod,
+                                  uint32_t mod_index)
+{
+    uint32_t mod_start = mod->mod_start;
+    uint32_t mod_end   = mod->mod_end;
+
     print_module_info(mod_index, mod);
-    module_add((uint32_t)mod_start, (uint32_t)mod_end, mod->cmdline);
-    multiboot_memory_map_t *entry = mmap;
-    
-    while ((uint32_t)entry < *mmap_end) {
-        if (entry->type == MULTIBOOT_MEMORY_AVAILABLE &&
-            module_in_region(mod_start, mod_end, entry->addr, entry->addr + entry->len)) {
-            uint32_t region_start = entry->addr;
-            uint32_t region_end = entry->addr + entry->len;
-            uint32_t entry_size = entry->size + 4;
-            uint32_t remaining = *mmap_end - ((uint32_t)entry + entry_size);
-            if (remaining > 0) {
-                memmove(entry, (uint8_t*)entry + entry_size, remaining);
+    module_add(mod_start, mod_end, mod->cmdline);
+
+    uint8_t *p   = (uint8_t*)mmap;
+    uint8_t *end = (uint8_t*)*mmap_end_ptr;
+
+    while (p < end) {
+        multiboot_memory_map_t *e = (multiboot_memory_map_t*)p;
+        uint32_t esize = e->size + 4;
+
+        uint32_t rstart = (uint32_t)e->addr;
+        uint32_t rend   = (uint32_t)(e->addr + e->len);
+
+        if (e->type == MULTIBOOT_MEMORY_AVAILABLE &&
+            module_in_region(mod_start, mod_end, rstart, rend))
+        {
+            uint32_t has_before = (mod_start > rstart);
+            uint32_t has_after  = (mod_end   < rend);
+            uint32_t n_parts    = 1 + has_before + has_after;
+            uint32_t new_size   = n_parts * MMAP_ENTRY_SIZE;
+            int32_t  delta      = (int32_t)new_size - (int32_t)esize;
+
+            uint8_t *src = p + esize;
+            uint32_t src_len = end - src;
+
+            if (delta > 0) {
+                for (uint32_t i = src_len; i > 0; i--) {
+                    src[i - 1 + delta] = src[i - 1];
+                }
+            } else if (delta < 0) {
+                for (uint32_t i = 0; i < src_len; i++) {
+                    src[i + delta] = src[i];
+                }
             }
-            *mmap_end -= entry_size;
-            *mmap_length -= entry_size;
-            if (mod_start > region_start) {
-                multiboot_memory_map_t *before = (multiboot_memory_map_t *)*mmap_end;
-                before->size = 20;
-                before->addr = region_start;
-                before->len = mod_start - region_start;
-                before->type = MULTIBOOT_MEMORY_AVAILABLE;
-                *mmap_end += 24;
-                *mmap_length += 24;
+
+            uint8_t *q = p;
+            if (has_before) {
+                multiboot_memory_map_t *n = (multiboot_memory_map_t*)q;
+                n->size = 20;
+                n->addr = rstart;
+                n->len  = mod_start - rstart;
+                n->type = MULTIBOOT_MEMORY_AVAILABLE;
+                q += MMAP_ENTRY_SIZE;
             }
-            multiboot_memory_map_t *mod_entry = (multiboot_memory_map_t *)*mmap_end;
-            mod_entry->size = 20;
-            mod_entry->addr = mod_start;
-            mod_entry->len = mod_end - mod_start;
-            mod_entry->type = MULTIBOOT_MEMORY_RESERVED;
-            *mmap_end += 24;
-            *mmap_length += 24;
-            if (mod_end < region_end) {
-                multiboot_memory_map_t *after = (multiboot_memory_map_t *)*mmap_end;
-                after->size = 20;
-                after->addr = mod_end;
-                after->len = region_end - mod_end;
-                after->type = MULTIBOOT_MEMORY_AVAILABLE;
-                *mmap_end += 24;
-                *mmap_length += 24;
+            {
+                multiboot_memory_map_t *n = (multiboot_memory_map_t*)q;
+                n->size = 20;
+                n->addr = mod_start;
+                n->len  = mod_end - mod_start;
+                n->type = MULTIBOOT_MEMORY_RESERVED;
+                q += MMAP_ENTRY_SIZE;
             }
-            break;
+            if (has_after) {
+                multiboot_memory_map_t *n = (multiboot_memory_map_t*)q;
+                n->size = 20;
+                n->addr = mod_end;
+                n->len  = rend - mod_end;
+                n->type = MULTIBOOT_MEMORY_AVAILABLE;
+            }
+
+            *mmap_end_ptr    += delta;
+            *mmap_length_ptr += delta;
+            return 1;
         }
-        entry = (multiboot_memory_map_t *)((uint32_t)entry + entry->size + 4);
+        p += esize;
     }
+    return 0;
 }
 
 void process_modules(multiboot_info_t *mbi) {
     if (!(mbi->flags & MULTIBOOT_INFO_MODS)) return;
     if (!(mbi->flags & MULTIBOOT_INFO_MEM_MAP)) return;
     INFO("- modules (%u):", mbi->mods_count);
-    uint32_t base = PHYS_TO_VIRT(mbi->mmap_addr);
-    uint32_t mmap_end = base + mbi->mmap_length;
-    multiboot_memory_map_t *mmap = (multiboot_memory_map_t *)base;
-    multiboot_module_t *mods = (multiboot_module_t *)PHYS_TO_VIRT(mbi->mods_addr);
-    for (uint32_t i = 0; i < mbi->mods_count; i++) {
-        process_single_module(mmap, &mmap_end, &mbi->mmap_length, &mods[i], i);
+    uint32_t orig_base = PHYS_TO_VIRT(mbi->mmap_addr);
+    uint32_t orig_len  = mbi->mmap_length;
+    uint32_t n = 0;
+    uint8_t *p = (uint8_t*)orig_base;
+    uint8_t *end = p + orig_len;
+    while (p < end && n < MAX_MMAP_ENTRIES) {
+        multiboot_memory_map_t *e = (multiboot_memory_map_t*)p;
+        uint64_t a = e->addr;
+        uint64_t b = e->addr + e->len;
+        if (a >= 0x100000000ULL) {
+            p += e->size + 4;
+            continue;
+        }
+        if (b > 0x100000000ULL) b = 0x100000000ULL;
+        memcpy(&mmap_buf[n], e, e->size + 4);
+        mmap_buf[n].addr = a;
+        mmap_buf[n].len  = b - a;
+        p += e->size + 4;
+        n++;
     }
+    uint32_t new_len = n * MMAP_ENTRY_SIZE;
+    uint32_t new_end = (uint32_t)mmap_buf + new_len;
+    multiboot_module_t *mods = (multiboot_module_t*)PHYS_TO_VIRT(mbi->mods_addr);
+    for (uint32_t i = 0; i < mbi->mods_count; i++) {
+        process_single_module(mmap_buf, &new_end, &new_len, &mods[i], i);
+    }
+    mbi->mmap_addr = VIRT_TO_PHYS((uint32_t)mmap_buf);
+    mbi->mmap_length = new_len;
 }
 
 // module table
-
 void module_add(uint32_t start, uint32_t end, uint32_t cmdline) {
     if (module_count >= MAX_MODULES) {
         WARN("module_add: too many modules (max %d)", MAX_MODULES);
         return;
     }
     module_t *m = &modules[module_count++];
-    m->start = start;
-    m->end = end;
-    m->size = end - start;
+    m->start   = start;
+    m->end     = end;
+    m->size    = end - start;
     m->cmdline = cmdline;
-    m->name = 0;
+    m->name    = 0;
 }
 
 module_t *module_get(uint32_t index) {
