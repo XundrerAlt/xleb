@@ -3,5 +3,8 @@
 #pragma once
 
 typedef enum {
-    SYS_PRINT,
+    SYS_OPEN,
+    SYS_CLOSE,
+    SYS_READ,
+    SYS_WRITE,
 } syscall_type_t;

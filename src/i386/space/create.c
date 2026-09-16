@@ -17,6 +17,7 @@ space_t *space_create(void) {
     vfs_inode_t *stdout = vfs_inode_alloc(VFS_CHARDEV, "stdout");
     stdout->ops = &stdout_ops;
     vfs_inode_add_child(s->ns->root, stdout);
+    s->fds[1] = vfs_ofile_create(stdout, 1);
     if (!s->pd_addr) { kfree(s); return 0; }
     return s;
 }

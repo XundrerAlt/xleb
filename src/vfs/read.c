@@ -3,9 +3,11 @@
 #include "vfs/mod.h"
 #include "vfs/kheap/mod.h"
 #include "string.h"
+#include "space/mod.h"
 #include "debug.h"
+#include "space/mod.h"
 
-int vfs_read(vfs_inode_t *inode, uint32_t offset, void *buf, uint32_t size) {
+static int vfs_read_inode(vfs_inode_t *inode, uint32_t offset, void *buf, uint32_t size) {
     if (!inode || !buf) return -1;
     if (inode->type == VFS_CHARDEV && inode->ops && inode->ops->read) {
         return inode->ops->read(inode, offset, buf, size);
@@ -18,5 +20,14 @@ int vfs_read(vfs_inode_t *inode, uint32_t offset, void *buf, uint32_t size) {
     uint32_t avail = inode->size - offset;
     uint32_t n = (size < avail) ? size : avail;
     memcpy(buf, inode->data + offset, n);
+    return n;
+}
+
+int vfs_read(space_t *space, int fd, void *buf, uint32_t size) {
+    if (!space || fd < 0 || fd >= MAX_FDS) return -1;
+    vfs_ofile_t *f = space->fds[fd];
+    if (!f || !f->inode) return -1;
+    int n = vfs_read_inode(f->inode, f->offset, buf, size);
+    if (n > 0) f->offset += n;
     return n;
 }

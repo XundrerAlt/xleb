@@ -13,6 +13,7 @@
 #include "vfs/kheap/mod.h"
 #include "vfs/mod.h"
 #include "vfs/stdout.h"
+#include "space/mod.h"
 
 uint32_t tests_success = 0;
 uint32_t tests_failed = 0;
@@ -34,18 +35,6 @@ void test2_th(void) {
     th_flag |= (1 << 1);
     while (1) {
         halt();
-    }
-}
-
-void test3_th(void) {
-    int ret;
-    __asm__ volatile(
-        "int $0x80"
-        : "=a" (ret)
-        : "a" (SYS_PRINT)
-    );
-    while (1) {
-
     }
 }
 
@@ -112,12 +101,15 @@ void ktest(void) {
         test_failed();
     }
     INFO("Test 4: VFS");
+    space_t* space = space_create();
     vfs_namespace_t *ns = vfs_ns_create();
     vfs_inode_t *stdout = vfs_inode_alloc(VFS_CHARDEV, "stdout");
     vfs_inode_add_child(ns->root, stdout);
     stdout->ops = &stdout_ops;
-    vfs_write(stdout, 0, "hello", 5);
-    vfs_write(stdout, 5, " world", 6);
+    int fd = vfs_open(space, "/stdout", 0);
+    vfs_write(space, fd, "hello", 5);
+    vfs_write(space, fd, " world", 6);
+    vfs_close(space, fd);
     test_success();
     INFO("End testing");
     if (tests_failed) {

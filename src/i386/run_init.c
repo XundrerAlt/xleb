@@ -5,6 +5,7 @@
 #include "halt.h"
 #include "thread/mod.h"
 #include "scheduler/mod.h"
+#include "vfs/mod.h"
 
 #define USER_ENTRY 0x41000000
 
@@ -23,6 +24,7 @@ void run_init(void) {
         ERROR("failed to create init thread");
         halt();
     }
+
     DEBUG("init thread created, switching");
     scheduler_add_thread(init);
 }

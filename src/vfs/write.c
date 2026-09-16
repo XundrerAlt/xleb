@@ -4,8 +4,9 @@
 #include "vfs/kheap/mod.h"
 #include "string.h"
 #include "debug.h"
+#include "space/mod.h"
 
-int vfs_write(vfs_inode_t *inode, uint32_t offset, const void *buf, uint32_t size) {
+static int vfs_write_inode(vfs_inode_t *inode, uint32_t offset, const void *buf, uint32_t size) {
     if (!inode || !buf) return -1;
     if (inode->type == VFS_CHARDEV) {
         if (!inode->ops || !inode->ops->write) {
@@ -35,4 +36,13 @@ int vfs_write(vfs_inode_t *inode, uint32_t offset, const void *buf, uint32_t siz
     }
     memcpy(inode->data + offset, buf, size);
     return size;
+}
+
+int vfs_write(space_t *space, int fd, const void *buf, uint32_t size) {
+    if (!space || fd < 0 || fd >= MAX_FDS) return -1;
+    vfs_ofile_t *f = space->fds[fd];
+    if (!f || !f->inode) return -1;
+    int n = vfs_write_inode(f->inode, f->offset, buf, size);
+    if (n > 0) f->offset += n;
+    return n;
 }
