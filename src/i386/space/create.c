@@ -5,12 +5,14 @@
 #include "vfs/kheap/mod.h"
 #include "vfs/mod.h"
 #include "vfs/stdout.h"
+#include "string.h"
 
 static int next_space_id = 0;
 
 space_t *space_create(void) {
     space_t *s = kmalloc(sizeof(space_t));
     if (!s) return 0;
+    memset(s, 0, sizeof(space_t));
     s->id = next_space_id++;
     s->pd_addr = create_page_directory();
     s->ns = vfs_ns_create();
