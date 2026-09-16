@@ -10,6 +10,7 @@
 
 static int check_user_ptr(uint32_t ptr, uint32_t size) {
     if (ptr >= 0xC0000000) return -1;
+    if (ptr + size < ptr) return -1;
     if (ptr + size >= 0xC0000000) return -1;
     return 0;
 }

@@ -25,11 +25,13 @@ static int uart_write(vfs_inode_t *inode, uint32_t offset, const void *buf, uint
     return size;
 }
 
+static const raw_file_t serial_files[] = {
+    { "data", { .read = 0, .write = uart_write } },
+};
+
 __attribute__((section(".rodata.raw_devices"), used))
 const raw_device_t uart_device = {
     .name = "serial0",
-    .ops = {
-        .read  = 0,
-        .write = uart_write,
-    },
+    .files = serial_files,
+    .file_count = 1,
 };
