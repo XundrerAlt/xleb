@@ -10,7 +10,7 @@ static int next_inode_id = 0;
 vfs_inode_t *vfs_inode_alloc(vfs_type_t type, const char *name) {
     vfs_inode_t *inode = kmalloc(sizeof(vfs_inode_t));
     if (!inode) {
-        ERROR("vfs_inode_alloc: out of memory");
+        ERROR("inode alloc: out of memory");
         return 0;
     }
     memset(inode, 0, sizeof(vfs_inode_t));

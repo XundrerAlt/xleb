@@ -9,7 +9,15 @@
 
 static int vfs_read_inode(vfs_inode_t *inode, uint32_t offset, void *buf, uint32_t size) {
     if (!inode || !buf) return -1;
-    if (inode->type == VFS_CHARDEV && inode->ops && inode->ops->read) {
+    if (inode->type == VFS_CHARDEV) {
+        if (!inode->ops) {
+            WARN("chardev '%s' has no ops", inode->name);
+            return -1;
+        }
+        if (!inode->ops->read) {
+            WARN("chardev '%s' has no read op", inode->name);
+            return -1;
+        }
         return inode->ops->read(inode, offset, buf, size);
     }
     if (inode->type != VFS_FILE) {

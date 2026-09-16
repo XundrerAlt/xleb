@@ -9,8 +9,12 @@
 static int vfs_write_inode(vfs_inode_t *inode, uint32_t offset, const void *buf, uint32_t size) {
     if (!inode || !buf) return -1;
     if (inode->type == VFS_CHARDEV) {
+        if (!inode->ops) {
+            WARN("chardev '%s' has no ops", inode->name);
+            return -1;
+        }
         if (!inode->ops || !inode->ops->write) {
-            ERROR("write: '%s' chardev has no write op", inode->name);
+            WARN("'%s' chardev has no write op", inode->name);
             return -1;
         }
         return inode->ops->write(inode, offset, buf, size);

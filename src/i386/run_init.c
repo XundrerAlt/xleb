@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
+#include "basic_drivers/mod.h"
 #include "boot/module.h"
 #include "debug.h"
 #include "halt.h"
@@ -24,7 +25,7 @@ void run_init(void) {
         ERROR("failed to create init thread");
         halt();
     }
-
+    add_raw_devices(init->space->ns);
     DEBUG("init thread created, switching");
     scheduler_add_thread(init);
 }

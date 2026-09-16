@@ -19,6 +19,10 @@ SECTIONS
 
     .rodata : AT(ADDR(.rodata) - 0xC0000000) {
         *(.rodata)
+        . = ALIGN(4);
+        __raw_devices_start = .;
+        KEEP(*(.rodata.raw_devices))
+        __raw_devices_end = .;
         *(.rodata.*)
     }
 
