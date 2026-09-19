@@ -52,7 +52,6 @@ static int sys_space_create(void) {
     space_t *child = space_create();
     if (!child) return -1;
     child->parent = parent;
-    DEBUG("child->id = %d", child->id);
     return child->id;
 }
 

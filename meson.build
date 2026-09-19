@@ -39,7 +39,6 @@ global_inc = include_directories(
     'src',
     'src/' + arch,
     '.',
-    '..',
 )
 
 kernel = executable('kernel',
