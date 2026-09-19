@@ -13,7 +13,7 @@
 #include "vfs/kheap/mod.h"
 #include "vfs/mod.h"
 #include "vfs/stdout.h"
-#include "space/mod.h"
+#include "process/mod.h"
 
 uint32_t tests_success = 0;
 uint32_t tests_failed = 0;
@@ -101,27 +101,27 @@ void ktest(void) {
         test_failed();
     }
     INFO("Test 4: VFS");
-    space_t *space = current_thread->space;
-    if (!space || !space->ns) {
-        ERROR("no space or ns");
+    process_t *process = current_thread->process;
+    if (!process || !process->ns) {
+        ERROR("no process or ns");
         test_failed();
         return;
     }
     vfs_inode_t *stdout = vfs_inode_alloc(VFS_CHARDEV, "stdout");
     if (!stdout) { test_failed(); return; }
-    vfs_inode_add_child(space->ns->root, stdout);
+    vfs_inode_add_child(process->ns->root, stdout);
     stdout->ops = &stdout_ops;
-    int fd = vfs_open(space, "/stdout", 0);
+    int fd = vfs_open(process, "/stdout", 0);
     DEBUG("vfs_open: fd=%d", fd);
     if (fd < 0) {
         ERROR("open /stdout failed");
         test_failed();
         return;
     }
-    int n1 = vfs_write(space, fd, "hello", 5);
-    int n2 = vfs_write(space, fd, " world", 6);
+    int n1 = vfs_write(process, fd, "hello", 5);
+    int n2 = vfs_write(process, fd, " world", 6);
     DEBUG("vfs_write: %d, %d", n1, n2);
-    int r = vfs_close(space, fd);
+    int r = vfs_close(process, fd);
     DEBUG("vfs_close: %d", r);
     if (n1 == 5 && n2 == 6 && r == 0) {
         test_success();

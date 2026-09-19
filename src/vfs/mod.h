@@ -12,7 +12,7 @@ typedef enum {
 
 typedef struct vfs_inode vfs_inode_t;
 struct chardev_ops;
-typedef struct space space_t;
+typedef struct process process_t;
 
 typedef struct vfs_inode {
     uint32_t id;
@@ -47,7 +47,7 @@ void vfs_inode_unref(vfs_inode_t *inode);
 int vfs_inode_add_child(vfs_inode_t *dir, vfs_inode_t *child);
 vfs_inode_t *vfs_inode_find_child(vfs_inode_t *dir, const char *name);
 vfs_inode_t *vfs_lookup(vfs_inode_t *root, const char *path);
-int vfs_read(space_t *space, int fd, void *buf, uint32_t size);
-int vfs_write(space_t *space, int fd, const void *buf, uint32_t size);
+int vfs_read(process_t *process, int fd, void *buf, uint32_t size);
+int vfs_write(process_t *process, int fd, const void *buf, uint32_t size);
 
 void vfs_init(void);

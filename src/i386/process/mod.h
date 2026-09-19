@@ -6,14 +6,14 @@
 #include "vfs/ofile.h"
 #include "mm/mod.h"
 
-typedef struct space {
+typedef struct process {
     uint32_t id;
     uint32_t pd_addr;
     vfs_namespace_t *ns;
     vfs_ofile_t *fds[MAX_FDS];
     uint32_t fd_count;
-    space_t *parent;
-} space_t;
+    struct process *parent;
+} process_t;
 
-space_t *space_create(void);
-void space_destroy(space_t *space);
+process_t *process_create(void);
+void process_destroy(process_t *process);

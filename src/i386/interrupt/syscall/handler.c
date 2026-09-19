@@ -3,7 +3,7 @@
 #include "debug.h"
 #include "interrupt/idt/mod.h"
 #include "mod.h"
-#include "space/mod.h"
+#include "process/mod.h"
 #include "scheduler/mod.h"
 #include "thread/mod.h"
 #include "vfs/mod.h"
@@ -22,34 +22,34 @@ static void sys_exit(int code) {
 
 static int sys_open(const char *path, int flags) {
     if (check_user_ptr((uint32_t)path, 1) != 0) return -1;
-    space_t *space = current_thread->space;
-    if (!space) return -1;
-    return vfs_open(space, path, flags);
+    process_t *process = current_thread->process;
+    if (!process) return -1;
+    return vfs_open(process, path, flags);
 }
 
 static int sys_close(int fd) {
-    space_t *space = current_thread->space;
-    if (!space) return -1;
-    return vfs_close(space, fd);
+    process_t *process = current_thread->process;
+    if (!process) return -1;
+    return vfs_close(process, fd);
 }
 
 static int sys_read(int fd, void *buf, uint32_t size) {
-    space_t *space = current_thread->space;
-    if (!space) return -1;
+    process_t *process = current_thread->process;
+    if (!process) return -1;
     if (check_user_ptr((uint32_t)buf, size) != 0) return -1;
-    return vfs_read(space, fd, buf, size);
+    return vfs_read(process, fd, buf, size);
 }
 
 static int sys_write(int fd, const void *buf, uint32_t size) {
-    space_t *space = current_thread->space;
-    if (!space) return -1;
+    process_t *process = current_thread->process;
+    if (!process) return -1;
     if (check_user_ptr((uint32_t)buf, size) != 0) return -1;
-    return vfs_write(space, fd, buf, size);
+    return vfs_write(process, fd, buf, size);
 }
 
-static int sys_space_create(void) {
-    space_t *parent = current_thread->space;
-    space_t *child = space_create();
+static int sys_process_create(void) {
+    process_t *parent = current_thread->process;
+    process_t *child = process_create();
     if (!child) return -1;
     child->parent = parent;
     return child->id;
@@ -78,7 +78,7 @@ void syscall_handler(regs_t *regs) {
             regs->eax = sys_write((int)arg0, (const void*)arg1, arg2);
             break;
         case SYS_SPACE_CREATE:
-            regs->eax = sys_space_create();
+            regs->eax = sys_process_create();
             break;
         default:
             WARN("UNKNOWN SYSCALL (%d)", num);

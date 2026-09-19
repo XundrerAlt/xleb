@@ -3,9 +3,9 @@
 #include "vfs/mod.h"
 #include "vfs/kheap/mod.h"
 #include "string.h"
-#include "space/mod.h"
+#include "process/mod.h"
 #include "debug.h"
-#include "space/mod.h"
+#include "process/mod.h"
 
 static int vfs_read_inode(vfs_inode_t *inode, uint32_t offset, void *buf, uint32_t size) {
     if (!inode || !buf) return -1;
@@ -31,9 +31,9 @@ static int vfs_read_inode(vfs_inode_t *inode, uint32_t offset, void *buf, uint32
     return n;
 }
 
-int vfs_read(space_t *space, int fd, void *buf, uint32_t size) {
-    if (!space || fd < 0 || fd >= MAX_FDS) return -1;
-    vfs_ofile_t *f = space->fds[fd];
+int vfs_read(process_t *process, int fd, void *buf, uint32_t size) {
+    if (!process || fd < 0 || fd >= MAX_FDS) return -1;
+    vfs_ofile_t *f = process->fds[fd];
     if (!f || !f->inode) return -1;
     int n = vfs_read_inode(f->inode, f->offset, buf, size);
     if (n > 0) f->offset += n;
