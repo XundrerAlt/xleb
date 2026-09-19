@@ -1,5 +1,5 @@
 sources += files(
-    'add_raw_devices.c',
+    'rawdevfs.c',
 )
 
 subdir('timer')

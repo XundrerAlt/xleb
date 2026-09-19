@@ -16,7 +16,7 @@ int vfs_open(process_t *process, const char *path, int flags) {
         DEBUG("open: no path");
         return -1;
     }
-    vfs_inode_t *inode = vfs_lookup(process->ns->root, path);
+    vfs_inode_t *inode = vfs_lookup_ns(process->ns, path);
     if (!inode) {
         DEBUG("open: '%s' not found", path);
         return -1;

@@ -47,12 +47,34 @@ static int sys_write(int fd, const void *buf, uint32_t size) {
     return vfs_write(process, fd, buf, size);
 }
 
-static int sys_process_create(void) {
-    process_t *parent = current_thread->process;
-    process_t *child = process_create();
-    if (!child) return -1;
-    child->parent = parent;
-    return child->id;
+static int sys_mount(const char *path, const char *fs_name) {
+    process_t *process = current_thread->process;
+    if (!process || !process->ns) return -1;
+
+    if (!path) return -1;
+    if (check_user_ptr((uint32_t)path, 4) != 0) return -1;
+    if (check_user_ptr((uint32_t)fs_name, 4) != 0) return -1;
+
+    vfs_fs_t *fs = vfs_find_fs(fs_name);
+    if (!fs) {
+        DEBUG("sys_ns_mount: fs '%s' not found", fs_name);
+        return -1;
+    }
+
+    vfs_inode_t *root = fs->get_root ? fs->get_root() : 0;
+    if (!root) {
+        DEBUG("sys_ns_mount: fs '%s' get_root failed", fs_name);
+        return -1;
+    }
+
+    int r = vfs_ns_mount(process->ns, path, root, 0);
+    if (r < 0) {
+        DEBUG("sys_ns_mount: mount '%s' at '%s' failed", fs_name, path);
+        return -1;
+    }
+
+    DEBUG("sys_ns_mount: mounted '%s' at '%s'", fs_name, path);
+    return 0;
 }
 
 void syscall_handler(regs_t *regs) {
@@ -77,8 +99,8 @@ void syscall_handler(regs_t *regs) {
         case SYS_WRITE:
             regs->eax = sys_write((int)arg0, (const void*)arg1, arg2);
             break;
-        case SYS_SPACE_CREATE:
-            regs->eax = sys_process_create();
+        case SYS_MOUNT:
+            regs->eax = sys_mount((const char*)arg0, (const char*)arg1);
             break;
         default:
             WARN("UNKNOWN SYSCALL (%d)", num);

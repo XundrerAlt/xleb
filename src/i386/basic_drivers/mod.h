@@ -16,4 +16,6 @@ typedef struct raw_device {
     uint32_t file_count;
 } raw_device_t;
 
+void rawdevfs_init(void);
+vfs_inode_t *rawdevfs_get_root(void);
 void add_raw_devices(vfs_namespace_t *ns);

@@ -1,4 +1,5 @@
 sources += files(
+    'fs.c',
     'inode.c',
     'kheap/mod.c',
     'namespace.c',

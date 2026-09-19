@@ -25,7 +25,6 @@ void run_init(void) {
         ERROR("failed to create init thread");
         halt();
     }
-    add_raw_devices(init->process->ns);
     DEBUG("init thread created, switching");
     scheduler_add_thread(init);
 }

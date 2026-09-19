@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
+#include "basic_drivers/mod.h"
 #include "basic_drivers/timer/mod.h"
 #include "halt.h"
 #include "interrupt/init.h"
@@ -22,6 +23,7 @@ void kinit(void) {
     mm_init();
     timer_init();
     scheduler_init();
+    rawdevfs_init();
 #ifdef ENABLE_TESTS
     extern void ktest(void);
     thread_t *ktest_th = thread_create(ktest, 0, 0, 0);
