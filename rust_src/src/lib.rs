@@ -3,6 +3,7 @@
 
 extern crate alloc;
 
+mod boot;
 mod logger;
 mod kheap;
 mod kernel_alloc;
