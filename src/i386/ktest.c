@@ -21,7 +21,7 @@ uint8_t must_caught_exception = 0;
 static uint8_t th_flag = 0;
 extern uint32_t kernel_page_directory[1024];
 extern void run_init(void);
-extern uint32_t rust_add(uint32_t a, uint32_t b);
+extern uint32_t rust_box_test(void);
 
 void test_th(void) {
     INFO("test thread: hello world, i'm working");
@@ -102,12 +102,12 @@ void ktest(void) {
         test_failed();
     }
     INFO("Test 4: Rust integration");
-    uint32_t rust_result = rust_add(2, 3);
-    if (rust_result != 5) {
-        WARN("rust_result != 5");
+    uint32_t rust_result = rust_box_test();
+    if (rust_result != 42) {
+        WARN("rust_result != 42");
         test_failed();
     } else {
-        INFO("rust_result == 5");
+        INFO("rust_result == 42");
         test_success();
     }
     if (tests_failed) {

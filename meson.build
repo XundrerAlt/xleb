@@ -39,7 +39,7 @@ rust_lib = custom_target('rust_lib',
     output: 'librustpart.a',
     command: [
         'sh', '-c',
-        'cargo +nightly build -Zjson-target-spec -Zbuild-std=core --release ' +
+        'cargo +nightly build -Zjson-target-spec -Zbuild-std=core,alloc --release ' +
         '--manifest-path ' + meson.current_source_dir() / 'rust_src/Cargo.toml' + ' ' +
         '--target ' + meson.current_source_dir() / 'toolchains/i386-unknown-none.json' + ' ' +
         '--target-dir ' + meson.current_build_dir() / 'rust-build' + ' && ' +

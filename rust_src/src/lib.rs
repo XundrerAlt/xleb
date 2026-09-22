@@ -1,6 +1,12 @@
 #![no_std]
+#![feature(alloc_error_handler)]
+
+extern crate alloc;
+
+mod kernel_alloc;
 
 use core::panic::PanicInfo;
+use alloc::boxed::Box;
 
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
@@ -8,6 +14,7 @@ fn panic(_info: &PanicInfo) -> ! {
 }
 
 #[no_mangle]
-pub extern "C" fn rust_add(a: u32, b: u32) -> u32 {
-    a + b
+pub extern "C" fn rust_box_test() -> u32 {
+    let b = Box::new(42u32);
+    *b
 }
