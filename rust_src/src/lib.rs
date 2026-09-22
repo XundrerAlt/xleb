@@ -3,6 +3,7 @@
 
 extern crate alloc;
 
+mod logger;
 mod kheap;
 mod kernel_alloc;
 
@@ -17,5 +18,6 @@ fn panic(_info: &PanicInfo) -> ! {
 #[no_mangle]
 pub extern "C" fn rust_box_test() -> u32 {
     let b = Box::new(42u32);
+    crate::verbose!("allocated!");
     *b
 }
