@@ -1,5 +1,5 @@
 project('xleb', 'c',
-    version: '0.1.0',
+    version: '0.1.1',
     default_options: [
         'b_staticpic=false',
         'b_pie=false',
@@ -35,6 +35,21 @@ endif
 sources = []
 subdir('src')
 
+rust_lib = custom_target('rust_lib',
+    output: 'librustpart.a',
+    command: [
+        'sh', '-c',
+        'cargo +nightly build -Zjson-target-spec -Zbuild-std=core --release ' +
+        '--manifest-path ' + meson.current_source_dir() / 'rust_src/Cargo.toml' + ' ' +
+        '--target ' + meson.current_source_dir() / 'toolchains/i386-unknown-none.json' + ' ' +
+        '--target-dir ' + meson.current_build_dir() / 'rust-build' + ' && ' +
+        'cp ' + meson.current_build_dir() / 'rust-build/i386-unknown-none/release/librustpart.a ' +
+        '@OUTPUT@',
+    ],
+    build_by_default: true,
+    build_always_stale: true,
+)
+
 global_inc = include_directories(
     'src',
     'src/' + arch,
@@ -44,6 +59,7 @@ global_inc = include_directories(
 kernel = executable('kernel',
     sources: sources,
     include_directories: global_inc,
+    link_with: [rust_lib],
     link_args: ['-T', meson.current_source_dir() / 'src' / arch / 'linker.ld'],
     link_depends: meson.current_source_dir() / 'src' / arch / 'linker.ld',
 )

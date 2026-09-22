@@ -1,3 +1,4 @@
 build*
 flake.lock
+rust_src/Cargo.lock
 toolchain.txt

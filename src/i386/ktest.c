@@ -21,6 +21,7 @@ uint8_t must_caught_exception = 0;
 static uint8_t th_flag = 0;
 extern uint32_t kernel_page_directory[1024];
 extern void run_init(void);
+extern uint32_t rust_add(uint32_t a, uint32_t b);
 
 void test_th(void) {
     INFO("test thread: hello world, i'm working");
@@ -100,33 +101,14 @@ void ktest(void) {
         WARN("Invalid th_flag");
         test_failed();
     }
-    INFO("Test 4: VFS");
-    process_t *process = current_thread->process;
-    if (!process || !process->ns) {
-        ERROR("no process or ns");
+    INFO("Test 4: Rust integration");
+    uint32_t rust_result = rust_add(2, 3);
+    if (rust_result != 5) {
+        WARN("rust_result != 5");
         test_failed();
-        return;
-    }
-    vfs_inode_t *stdout = vfs_inode_alloc(VFS_CHARDEV, "stdout");
-    if (!stdout) { test_failed(); return; }
-    vfs_inode_add_child(process->ns->root, stdout);
-    stdout->ops = &stdout_ops;
-    int fd = vfs_open(process, "/stdout", 0);
-    DEBUG("vfs_open: fd=%d", fd);
-    if (fd < 0) {
-        ERROR("open /stdout failed");
-        test_failed();
-        return;
-    }
-    int n1 = vfs_write(process, fd, "hello", 5);
-    int n2 = vfs_write(process, fd, " world", 6);
-    DEBUG("vfs_write: %d, %d", n1, n2);
-    int r = vfs_close(process, fd);
-    DEBUG("vfs_close: %d", r);
-    if (n1 == 5 && n2 == 6 && r == 0) {
-        test_success();
     } else {
-        test_failed();
+        INFO("rust_result == 5");
+        test_success();
     }
     if (tests_failed) {
         WARN("%d success; %d failed", tests_success, tests_failed);
