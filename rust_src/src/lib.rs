@@ -3,6 +3,7 @@
 
 extern crate alloc;
 
+mod kheap;
 mod kernel_alloc;
 
 use core::panic::PanicInfo;
