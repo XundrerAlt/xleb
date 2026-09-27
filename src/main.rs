@@ -5,7 +5,7 @@
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
-mod boot;
+mod arch;
 mod logger;
 
 use core::panic::PanicInfo;
@@ -17,15 +17,9 @@ fn panic(_info: &PanicInfo) -> ! {
 }
 
 #[cfg(test)]
-pub fn test_runner(tests: &[&dyn Fn()]) {
+pub(crate) fn test_runner(tests: &[&dyn Fn()]) {
     crate::info!("Running {} tests", tests.len());
     for test in tests {
         test();
     }
-}
-
-#[cfg(test)]
-#[no_mangle]
-pub extern "C" fn test_entry() -> ! {
-    test_main()
 }

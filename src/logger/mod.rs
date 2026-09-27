@@ -1,10 +1,10 @@
-pub mod uart;
+pub(crate) mod uart;
 use core::fmt;
 use core::fmt::Write;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LogLevel {
+pub(crate) enum LogLevel {
     Verbose,
     Debug,
     Info,
@@ -46,7 +46,7 @@ impl fmt::Write for UartWriter {
     }
 }
 
-pub fn log(level: LogLevel, args: fmt::Arguments) {
+pub(crate) fn log(level: LogLevel, args: fmt::Arguments) {
     let mut writer = UartWriter;
     let _ = write!(writer, "{}{}{}:\x1b[0m ",
         level.color(), "", level.as_str()

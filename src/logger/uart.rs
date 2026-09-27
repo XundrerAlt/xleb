@@ -7,8 +7,8 @@ unsafe fn inb(port: u16) -> u8 {
         core::arch::asm!(
             "in al, dx",
             out("al") value,
-                         in("dx") port,
-                         options(nomem, nostack, preserves_flags)
+            in("dx") port,
+            options(nomem, nostack, preserves_flags)
         );
     }
     value

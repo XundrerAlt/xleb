@@ -1,4 +1,3 @@
-mod kinit;
 mod multiboot1;
 use core::arch::global_asm;
 
