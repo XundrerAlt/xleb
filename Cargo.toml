@@ -1,0 +1,15 @@
+[package]
+name = "xleb"
+version = "0.1.1"
+edition = "2024"
+
+[[bin]]
+path = "src/main.rs"
+name = "kernel"
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+opt-level = "z"
