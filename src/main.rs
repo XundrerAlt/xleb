@@ -12,17 +12,10 @@ mod test;
 
 use arch::cpu::halt;
 use core::panic::PanicInfo;
+use crate::logger::fatal;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    crate::fatal!("{}", info);
+    fatal!("{}", info);
     unsafe { halt(); }
-}
-
-#[cfg(xleb_tests)]
-mod tests {
-    #[test_case]
-    fn trivial() {
-        assert_eq!(1 + 1, 2);
-    }
 }

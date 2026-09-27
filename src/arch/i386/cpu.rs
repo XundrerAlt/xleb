@@ -38,3 +38,12 @@ pub(crate) unsafe fn halt() -> ! {
         unsafe { asm!("hlt", options(nomem, nostack, preserves_flags)); }
     }
 }
+
+// tables
+
+#[repr(C, packed)]
+#[derive(Clone, Copy)]
+pub(crate) struct DescriptorTablePointer {
+    pub limit: u16,
+    pub base: u32,
+}

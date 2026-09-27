@@ -5,9 +5,18 @@ use crate::test::run_tests;
 #[cfg(xleb_tests)]
 use crate::xleb_test;
 
+use crate::arch::interrupt;
+use crate::logger::info;
+
 #[unsafe(no_mangle)]
 pub extern "C" fn kinit() -> ! {
-    crate::info!("xleb: hello world");
+    info!("{} v{}",
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_VERSION"),
+    );
+    unsafe {
+        interrupt::init();
+    }
     #[cfg(xleb_tests)]
     {
         run_tests();
@@ -20,7 +29,7 @@ pub extern "C" fn kinit() -> ! {
 
 #[cfg(xleb_tests)]
 fn test_test() {
-    crate::info!("test of test");
+    info!("test of test");
 }
 
 #[cfg(xleb_tests)]

@@ -44,11 +44,11 @@ bt() {
 }
 
 r() {
-    qemu-system-$ARCH -kernel build/$TARGET/release/kernel -serial stdio $*
+    qemu-system-$ARCH -kernel build/$TARGET/release/kernel -serial stdio -no-reboot $*
 }
 
 rd() {
-    r -no-reboot -s -S
+    r -s -S
 }
 
 br()  { b && r; }

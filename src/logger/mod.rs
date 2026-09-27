@@ -59,7 +59,6 @@ pub(crate) fn log(level: LogLevel, args: fmt::Arguments) {
 
 // macros
 
-#[macro_export]
 macro_rules! verbose {
     ($($arg:tt)*) => {
         $crate::logger::log(
@@ -68,9 +67,8 @@ macro_rules! verbose {
         )
     };
 }
+pub(crate) use verbose;
 
-
-#[macro_export]
 macro_rules! debug {
     ($($arg:tt)*) => {
         $crate::logger::log(
@@ -79,8 +77,8 @@ macro_rules! debug {
         )
     };
 }
+pub(crate) use debug;
 
-#[macro_export]
 macro_rules! info {
     ($($arg:tt)*) => {
         $crate::logger::log(
@@ -89,9 +87,9 @@ macro_rules! info {
         )
     };
 }
+pub(crate) use info;
 
-#[macro_export]
-macro_rules! warn {
+macro_rules! warning {
     ($($arg:tt)*) => {
         $crate::logger::log(
             $crate::logger::LogLevel::Warn,
@@ -99,8 +97,8 @@ macro_rules! warn {
         )
     };
 }
+pub(crate) use warning;
 
-#[macro_export]
 macro_rules! error {
     ($($arg:tt)*) => {
         $crate::logger::log(
@@ -109,8 +107,8 @@ macro_rules! error {
         )
     };
 }
+pub(crate) use error;
 
-#[macro_export]
 macro_rules! fatal {
     ($($arg:tt)*) => {
         $crate::logger::log(
@@ -119,3 +117,4 @@ macro_rules! fatal {
         )
     };
 }
+pub(crate) use fatal;
