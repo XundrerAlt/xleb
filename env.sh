@@ -16,12 +16,14 @@ set_target() {
 }
 
 _cargo_build() {
-    cargo +nightly build \
+    local subcommand="$1"
+    shift
+    cargo +nightly "$subcommand" \
         -Zjson-target-spec \
         -Zbuild-std=core,alloc \
         --target "$TARGET_JSON" \
         --target-dir build \
-        --release \
+        -Zbuild-std-features=compiler-builtins-mem \
         "$@"
 }
 
@@ -30,7 +32,7 @@ b() {
         echo "Error: target not set. Use 'set_target <arch>' first."
         return 1
     fi
-    _cargo_build
+    _cargo_build build --release
 }
 
 bt() {
@@ -38,7 +40,7 @@ bt() {
         echo "Error: target not set. Use 'set_target <arch>' first."
         return 1
     fi
-    _cargo_build # TODO
+    RUSTFLAGS="--cfg xleb_tests" _cargo_build build --release
 }
 
 r() {
@@ -49,8 +51,8 @@ rd() {
     r -no-reboot -s -S
 }
 
-br()  { b && r;  }
-btr() { bt && r;  }
+br()  { b && r; }
+btr() { bt && r; }
 bd()  { b && rd; }
 cl()  { rm -rf build; echo "Removed all build directories"; }
 cbr()  { cl; br; }

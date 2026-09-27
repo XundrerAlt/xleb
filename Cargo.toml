@@ -6,6 +6,7 @@ edition = "2024"
 [[bin]]
 path = "src/main.rs"
 name = "kernel"
+test = false
 
 [profile.dev]
 panic = "abort"

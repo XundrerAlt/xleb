@@ -32,6 +32,12 @@ SECTIONS
         *(.bss.*)
     }
 
+    .tests : ALIGN(4) {
+        __tests_start = .;
+        KEEP(*(.tests))
+        __tests_end = .;
+    }
+
     . = ALIGN(4K);
 
     _kernel_end = .;
