@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (c) 2026 XundrerAlt
+// SPDX-FileCopyrightText: 2026 XundrerAlt
 .section .data
 .align 8
 gdt:

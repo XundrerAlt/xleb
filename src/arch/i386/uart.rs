@@ -1,30 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 XundrerAlt
 const COM1: u16 = 0x3F8;
-
-#[inline]
-unsafe fn inb(port: u16) -> u8 {
-    let value: u8;
-    unsafe {
-        core::arch::asm!(
-            "in al, dx",
-            out("al") value,
-            in("dx") port,
-            options(nomem, nostack, preserves_flags)
-        );
-    }
-    value
-}
-
-#[inline]
-unsafe fn outb(port: u16, value: u8) {
-    unsafe {
-        core::arch::asm!(
-            "out dx, al",
-            in("dx") port,
-            in("al") value,
-            options(nomem, nostack, preserves_flags)
-        );
-    }
-}
+use crate::arch::cpu::{inb,outb};
 
 #[unsafe(no_mangle)]
 pub extern "C" fn uart_putc(c: u8) {

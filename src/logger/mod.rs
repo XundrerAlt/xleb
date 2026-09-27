@@ -1,6 +1,8 @@
-pub(crate) mod uart;
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 XundrerAlt
 use core::fmt;
 use core::fmt::Write;
+use crate::arch::uart;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

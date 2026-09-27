@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 XundrerAlt
 #![no_std]
 #![no_main]
 #![cfg_attr(test, no_main)]
@@ -8,12 +10,13 @@
 mod arch;
 mod logger;
 
+use arch::cpu::halt;
 use core::panic::PanicInfo;
 
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    crate::fatal!("TODO");
-    loop {}
+fn panic(info: &PanicInfo) -> ! {
+    crate::fatal!("{}", info);
+    unsafe { halt(); }
 }
 
 #[cfg(test)]

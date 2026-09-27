@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 XundrerAlt
 #[unsafe(link_section = ".multiboot")]
 #[unsafe(no_mangle)]
 #[used]
