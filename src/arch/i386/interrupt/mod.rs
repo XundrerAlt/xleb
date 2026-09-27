@@ -3,6 +3,7 @@
 mod idt;
 mod isr;
 mod irq;
+mod pic;
 mod stub;
 
 use idt::{IdtEntry,IDT_ENTRIES};
@@ -16,14 +17,11 @@ static mut IDT: [IdtEntry; IDT_ENTRIES] = [IdtEntry::new(0, 0, 0); IDT_ENTRIES];
 
 #[repr(C)]
 pub(crate) struct InterruptFrame {
-    pub ds: u32,
-    pub edi: u32, pub esi: u32, pub ebp: u32, pub esp: u32,
-    pub ebx: u32, pub edx: u32, pub ecx: u32, pub eax: u32,
+    pub gs: u32, pub fs: u32, pub es: u32, pub ds: u32,
+    pub edi: u32, pub esi: u32, pub ebp: u32, pub esp: u32, pub ebx: u32, pub edx: u32, pub ecx: u32, pub eax: u32,
     pub int_no: u32, pub err_code: u32,
-    pub eip: u32, pub cs: u32, pub eflags: u32,
-    pub useresp: u32, pub ss: u32,
+    pub eip: u32, pub cs: u32, pub eflags: u32, pub useresp: u32, pub ss: u32,
 }
-
 #[inline(always)]
 unsafe fn lidt(ptr: &DescriptorTablePointer) {
     unsafe { asm!("lidt [{}]", in(reg) ptr, options(readonly, nostack, preserves_flags)) };
@@ -42,6 +40,8 @@ pub(crate) unsafe fn init() {
             limit: (core::mem::size_of::<[IdtEntry; IDT_ENTRIES]>() - 1) as u16,
             base: &raw const IDT as u32,
         };
+        pic::remap(0x20, 0x28);
+        pic::mask_all();
         lidt(&ptr);
         verbose!("idt loaded");
         enable_interrupts();

@@ -10,5 +10,5 @@ global_asm!(
 
 global_asm!(
     include_str!("gdt.S"),
-            options(att_syntax),
+    options(att_syntax),
 ); // TODO: rewrite to Rust
