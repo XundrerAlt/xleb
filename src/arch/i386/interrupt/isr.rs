@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
-use crate::logger::{debug, error, fatal, LogLevel};
-use crate::arch::cpu::halt;
+use crate::logger::{debug, error, fatal};
 use super::InterruptFrame;
 
 const EXCEPTION_NAMES: [&str; 32] = [
@@ -26,6 +25,7 @@ pub(crate) extern "C" fn isr_handler(frame: *const InterruptFrame) {
     let frame = unsafe { &*frame };
     if frame.int_no >= 32 {
         error!("isr: vector {} out of range", frame.int_no);
+        return;
     }
     let name = EXCEPTION_NAMES[frame.int_no as usize];
     match frame.int_no {

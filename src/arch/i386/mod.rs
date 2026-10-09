@@ -4,4 +4,5 @@ mod boot;
 pub(crate) mod cpu;
 pub(crate) mod interrupt;
 mod kinit;
+pub(crate) mod timer;
 pub(crate) mod uart;

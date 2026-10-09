@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 mod idt;
 mod isr;
-mod irq;
+pub(crate) mod irq;
 mod pic;
 mod stub;
 
@@ -36,6 +36,11 @@ pub(crate) unsafe fn init() {
         for i in 0..32 {
             IDT[i] = IdtEntry::new(ISR_TABLE[i], 0x08, 0x8E);
         }
+        verbose!("isr loaded");
+        for i in 0..16 {
+            IDT[i + 32] = IdtEntry::new(IRQ_TABLE[i], 0x08, 0x8E);
+        }
+        verbose!("irq loaded");
         let ptr = DescriptorTablePointer {
             limit: (core::mem::size_of::<[IdtEntry; IDT_ENTRIES]>() - 1) as u16,
             base: &raw const IDT as u32,

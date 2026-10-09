@@ -28,6 +28,19 @@ macro_rules! stubs {
             )*
         );
     };
+    (irq: $($name:ident : $vector:literal),* $(,)?) => {
+        global_asm!(
+            $(
+                concat!(
+                    ".global ", stringify!($name), "\n",
+                        stringify!($name), ":\n",
+                        "  push 0\n",
+                        "  push ", $vector, "\n",
+                        "  jmp irq_common\n",
+                ),
+            )*
+        );
+    };
 }
 
 stubs!(normal:
@@ -47,7 +60,7 @@ stubs!(errcode:
     isr17: 17,
 );
 
-stubs!(normal:
+stubs!(irq:
     irq0: 32, irq1: 33, irq2: 34, irq3: 35,
     irq4: 36, irq5: 37, irq6: 38, irq7: 39,
     irq8: 40, irq9: 41, irq10: 42, irq11: 43,

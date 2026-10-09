@@ -18,12 +18,12 @@ pub(crate) enum LogLevel {
 impl LogLevel {
     fn as_str(&self) -> &'static str {
         match self {
-            LogLevel::Verbose => "VERBOSE",
-            LogLevel::Debug => "DEBUG",
-            LogLevel::Info => "INFO",
-            LogLevel::Warning => "WARNING",
-            LogLevel::Error => "ERROR",
-            LogLevel::Fatal => "FATAL",
+            LogLevel::Verbose => "V",
+            LogLevel::Debug => "D",
+            LogLevel::Info => "I",
+            LogLevel::Warning => "W",
+            LogLevel::Error => "E",
+            LogLevel::Fatal => "F",
         }
     }
     fn color(&self) -> &'static str {

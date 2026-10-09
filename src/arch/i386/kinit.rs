@@ -6,6 +6,7 @@ use crate::test::run_tests;
 use crate::xleb_test;
 
 use crate::arch::interrupt;
+use crate::arch::timer;
 use crate::logger::info;
 
 #[unsafe(no_mangle)]
@@ -16,6 +17,7 @@ pub extern "C" fn kinit() -> ! {
     );
     unsafe {
         interrupt::init();
+        timer::init();
     }
     #[cfg(xleb_tests)]
     {
