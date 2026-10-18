@@ -57,6 +57,7 @@ pub(crate) fn log(level: LogLevel, args: fmt::Arguments) {
 
 // macros
 
+#[cfg(feature = "verbose")]
 macro_rules! verbose {
     ($($arg:tt)*) => {
         $crate::logger::log(
@@ -65,6 +66,11 @@ macro_rules! verbose {
         )
     };
 }
+#[cfg(not(feature = "verbose"))]
+macro_rules! verbose {
+    ($($arg:tt)*) => {};
+}
+
 pub(crate) use verbose;
 
 macro_rules! debug {

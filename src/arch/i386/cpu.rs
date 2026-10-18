@@ -41,7 +41,6 @@ pub(crate) unsafe fn inb(port: u16) -> u8 {
 
 #[inline(always)]
 pub(crate) unsafe fn halt() -> ! {
-    unsafe { disable_interrupts() };
     loop {
         unsafe {
             asm!("hlt", options(nomem, nostack, preserves_flags));
@@ -62,6 +61,19 @@ pub unsafe fn read_cr3() -> u32 {
         );
     }
     cr3
+}
+
+#[inline]
+pub unsafe fn read_cr2() -> u32 {
+    let cr2: u32;
+    unsafe {
+        core::arch::asm!(
+            "mov {}, cr2",
+            out(reg) cr2,
+            options(nomem, nostack, preserves_flags),
+        );
+    }
+    cr2
 }
 
 // tables

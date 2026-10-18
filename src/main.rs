@@ -7,13 +7,13 @@
 #![cfg_attr(xleb_tests, reexport_test_harness_main = "test_main")]
 
 mod arch;
-mod sched;
 mod logger;
+mod sched;
 mod test;
 
 use crate::logger::fatal;
-use arch::cpu::halt;
 use core::panic::PanicInfo;
+use crate::arch::cpu::halt;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {

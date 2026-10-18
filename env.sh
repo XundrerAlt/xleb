@@ -32,7 +32,7 @@ b() {
         echo "Error: target not set. Use 'set_target <arch>' first."
         return 1
     fi
-    _cargo_build build --release
+    _cargo_build build "$@" --release
 }
 
 bt() {
@@ -40,7 +40,7 @@ bt() {
         echo "Error: target not set. Use 'set_target <arch>' first."
         return 1
     fi
-    RUSTFLAGS="--cfg xleb_tests" _cargo_build build --release
+    RUSTFLAGS="--cfg xleb_tests" _cargo_build build "$@" --release
 }
 
 r() {
@@ -51,12 +51,12 @@ rd() {
     r -s -S
 }
 
-br()  { b && r; }
-btr() { bt && r; }
-bd()  { b && rd; }
+br()  { b "$@" && r; }
+btr() { bt "$@" && r; }
+bd()  { b "$@" && rd; }
 cl()  { rm -rf build; echo "Removed all build directories"; }
-cbr()  { cl; br; }
-cbtr() { cl; btr; }
+cbr()  { cl; br "$@"; }
+cbtr() { cl; btr "$@"; }
 d()  { lldb build/$TARGET/release/kernel -o "gdb-remote localhost:1234"; }
 
 help() {

@@ -58,6 +58,30 @@ pub(crate) extern "C" fn isr_handler(frame: *const InterruptFrame) {
                 frame.eip, frame.cs, frame.eflags
             );
         }
+        14 => {
+            let cr2 = unsafe { crate::arch::cpu::read_cr2() };
+            fatal!(
+                "exception {}: {} (err={:#x})",
+                frame.int_no,
+                name,
+                frame.err_code
+            );
+            fatal!("cr2={:#x}", cr2);
+            fatal!(
+                "eax={:#x} ebx={:#x} ecx={:#x} edx={:#x}",
+                frame.eax,
+                frame.ebx,
+                frame.ecx,
+                frame.edx
+            );
+            fatal!(
+                "eip={:#x} cs={:#x} eflags={:#x}",
+                frame.eip,
+                frame.cs,
+                frame.eflags
+            );
+            panic!("this's fatal exception.");
+        }
         _ => {
             fatal!(
                 "exception {}: {} (err={:#x})",

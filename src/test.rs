@@ -33,7 +33,7 @@ macro_rules! xleb_test {
 }
 
 #[cfg(xleb_tests)]
-pub(crate) fn run_tests() -> ! {
+pub(crate) fn run_tests() {
     #[allow(improper_ctypes)]
     unsafe extern "C" {
         static __tests_start: TestEntry;
@@ -48,8 +48,5 @@ pub(crate) fn run_tests() -> ! {
         info!("test {} ...", entry.name);
         (entry.func)();
     }
-    info!("All tests are ok. Halting...");
-    unsafe {
-        halt();
-    }
+    info!("All tests are ok.");
 }

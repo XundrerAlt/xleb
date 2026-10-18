@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 
 use crate::arch::thread::Thread;
+use crate::logger::verbose;
 
 pub struct ThreadQueue {
     head: *mut Thread,
@@ -11,7 +12,11 @@ pub struct ThreadQueue {
 
 impl ThreadQueue {
     pub const fn new() -> Self {
-        Self { head: core::ptr::null_mut(), tail: core::ptr::null_mut(), len: 0 }
+        Self {
+            head: core::ptr::null_mut(),
+            tail: core::ptr::null_mut(),
+            len: 0,
+        }
     }
 
     pub fn push(&mut self, t: *mut Thread) -> bool {
@@ -31,6 +36,7 @@ impl ThreadQueue {
 
     pub fn pop(&mut self) -> Option<*mut Thread> {
         if self.head.is_null() {
+            verbose!("queue: pop empty");
             return None;
         }
         let t = self.head;
@@ -48,8 +54,12 @@ impl ThreadQueue {
         Some(t)
     }
 
-    pub fn is_empty(&self) -> bool { self.head.is_null() }
-    pub fn len(&self) -> usize { self.len }
+    pub fn is_empty(&self) -> bool {
+        self.head.is_null()
+    }
+    pub fn len(&self) -> usize {
+        self.len
+    }
 }
 
 // SAFETY: ThreadQueue is only accessed through a Mutex (or &mut self).

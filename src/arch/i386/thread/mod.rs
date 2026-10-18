@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
-use xleb_api::{ThreadInfo, ThreadState};
-use crate::logger::debug;
 use crate::arch::cpu;
+use crate::logger::debug;
+use xleb_api::{ThreadInfo, ThreadState};
+
+pub(crate) mod switch;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -11,8 +13,19 @@ pub struct ThreadContext {
     pub esi: u32,
     pub ebx: u32,
     pub ebp: u32,
+    pub eflags: u32,
     pub eip: u32,
 }
+
+const _: () = {
+    assert!(core::mem::size_of::<ThreadContext>() == 24);
+    assert!(core::mem::offset_of!(ThreadContext, edi) == 0);
+    assert!(core::mem::offset_of!(ThreadContext, esi) == 4);
+    assert!(core::mem::offset_of!(ThreadContext, ebx) == 8);
+    assert!(core::mem::offset_of!(ThreadContext, ebp) == 12);
+    assert!(core::mem::offset_of!(ThreadContext, eflags) == 16);
+    assert!(core::mem::offset_of!(ThreadContext, eip) == 20);
+};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -54,6 +67,7 @@ static mut ROOT_CTX: ThreadContext = ThreadContext {
     esi: 0,
     ebx: 0,
     ebp: 0,
+    eflags: 0x202,
     eip: 0,
 };
 

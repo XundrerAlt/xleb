@@ -3,6 +3,7 @@
 use crate::arch::cpu::outb;
 use crate::arch::interrupt;
 use crate::logger::{debug, verbose};
+use crate::sched;
 use core::sync::atomic::{AtomicU32, Ordering};
 
 static TICKS: AtomicU32 = AtomicU32::new(0);
@@ -18,7 +19,9 @@ pub(crate) fn ticks() -> u32 {
 
 fn on_tick(_frame: &interrupt::InterruptFrame) {
     TICKS.fetch_add(1, Ordering::Relaxed);
-    verbose!("timer: tick");
+    unsafe {
+        sched::yield_now();
+    }
 }
 
 pub(crate) unsafe fn init() {
