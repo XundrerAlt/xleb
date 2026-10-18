@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 use crate::arch::cpu::{inb, outb};
-use crate::logger::{debug, verbose};
+use crate::logger::verbose;
 
 const PIC1: u16 = 0x20;
 const PIC2: u16 = 0xA0;
@@ -39,7 +39,7 @@ pub(crate) unsafe fn remap(offset1: u8, offset2: u8) {
         outb(PIC1_DATA, 0xFF);
         outb(PIC2_DATA, 0xFF);
     }
-    debug!("pic: remapped, master={:#x} slave={:#x}", offset1, offset2);
+    verbose!("pic: remapped, master={:#x} slave={:#x}", offset1, offset2);
 }
 
 pub(crate) unsafe fn mask_all() {

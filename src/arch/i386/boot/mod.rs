@@ -12,3 +12,9 @@ global_asm!(
     include_str!("gdt.S"),
     options(att_syntax),
 ); // TODO: rewrite to Rust
+
+pub(crate) unsafe fn init() {
+    unsafe {
+        multiboot1::init();
+    }
+}

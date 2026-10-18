@@ -5,6 +5,7 @@ use crate::test::run_tests;
 #[cfg(xleb_tests)]
 use crate::xleb_test;
 
+use crate::arch::boot;
 use crate::arch::interrupt;
 use crate::arch::timer;
 use crate::logger::info;
@@ -16,6 +17,7 @@ pub extern "C" fn kinit() -> ! {
         env!("CARGO_PKG_VERSION"),
     );
     unsafe {
+        boot::init();
         interrupt::init();
         timer::init();
     }

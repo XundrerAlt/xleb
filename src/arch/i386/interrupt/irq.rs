@@ -14,7 +14,7 @@ pub fn register(irq: u8, h: IrqHandler) {
     assert!((irq as usize) < 16);
     IRQ_HANDLERS[irq as usize].store(h as *mut (), Ordering::Release);
     unsafe { pic::unmask(irq); }
-    //verbose!("IRQ {} registered", irq);
+    verbose!("IRQ {} registered (to 0x{:x})", irq, h as usize);
 }
 
 fn dispatch(irq: u8, frame: &InterruptFrame) {
