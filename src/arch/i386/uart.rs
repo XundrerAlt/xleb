@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 const COM1: u16 = 0x3F8;
-use crate::arch::cpu::{inb,outb};
+use crate::arch::cpu::{inb, outb};
 
 #[unsafe(no_mangle)]
 pub extern "C" fn uart_putc(c: u8) {

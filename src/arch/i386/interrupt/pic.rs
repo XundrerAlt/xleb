@@ -24,17 +24,25 @@ pub(crate) unsafe fn remap(offset1: u8, offset2: u8) {
         let _mask1 = inb(PIC1_DATA);
         let _mask2 = inb(PIC2_DATA);
 
-        outb(PIC1_CMD, ICW1_INIT); io_wait();
-        outb(PIC2_CMD, ICW1_INIT); io_wait();
+        outb(PIC1_CMD, ICW1_INIT);
+        io_wait();
+        outb(PIC2_CMD, ICW1_INIT);
+        io_wait();
 
-        outb(PIC1_DATA, offset1); io_wait();
-        outb(PIC2_DATA, offset2); io_wait();
+        outb(PIC1_DATA, offset1);
+        io_wait();
+        outb(PIC2_DATA, offset2);
+        io_wait();
 
-        outb(PIC1_DATA, 0x04); io_wait();
-        outb(PIC2_DATA, 0x02); io_wait();
+        outb(PIC1_DATA, 0x04);
+        io_wait();
+        outb(PIC2_DATA, 0x02);
+        io_wait();
 
-        outb(PIC1_DATA, ICW4_8086); io_wait();
-        outb(PIC2_DATA, ICW4_8086); io_wait();
+        outb(PIC1_DATA, ICW4_8086);
+        io_wait();
+        outb(PIC2_DATA, ICW4_8086);
+        io_wait();
 
         outb(PIC1_DATA, 0xFF);
         outb(PIC2_DATA, 0xFF);

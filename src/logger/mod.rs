@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
+use crate::arch::uart;
 use core::fmt;
 use core::fmt::Write;
-use crate::arch::uart;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -30,8 +30,8 @@ impl LogLevel {
         match self {
             LogLevel::Verbose => "\x1b[0m",
             LogLevel::Debug => "\x1b[36m",
-            LogLevel::Info  => "\x1b[32m",
-            LogLevel::Warning  => "\x1b[33m",
+            LogLevel::Info => "\x1b[32m",
+            LogLevel::Warning => "\x1b[33m",
             LogLevel::Error => "\x1b[31m",
             LogLevel::Fatal => "\x1b[31m",
         }
@@ -50,9 +50,7 @@ impl fmt::Write for UartWriter {
 
 pub(crate) fn log(level: LogLevel, args: fmt::Arguments) {
     let mut writer = UartWriter;
-    let _ = write!(writer, "{}{}{}:\x1b[0m ",
-        level.color(), "", level.as_str()
-    );
+    let _ = write!(writer, "{}{}{}:\x1b[0m ", level.color(), "", level.as_str());
     let _ = writer.write_fmt(args);
     let _ = writer.write_str("\n");
 }

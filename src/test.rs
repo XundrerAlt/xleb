@@ -22,7 +22,9 @@ macro_rules! xleb_test {
             static ENTRY: $crate::test::TestEntry = $crate::test::TestEntry {
                 name: stringify!($name),
                 func: {
-                    fn wrapper() { super::$name() }
+                    fn wrapper() {
+                        super::$name()
+                    }
                     wrapper
                 },
             };
@@ -47,5 +49,7 @@ pub(crate) fn run_tests() -> ! {
         (entry.func)();
     }
     info!("All tests are ok. Halting...");
-    unsafe { halt(); }
+    unsafe {
+        halt();
+    }
 }

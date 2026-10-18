@@ -12,10 +12,7 @@ use crate::logger::info;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn kinit() -> ! {
-    info!("{} v{}",
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_PKG_VERSION"),
-    );
+    info!("{} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"),);
     unsafe {
         boot::init();
         interrupt::init();

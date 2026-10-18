@@ -10,12 +10,14 @@ mod arch;
 mod logger;
 mod test;
 
+use crate::logger::fatal;
 use arch::cpu::halt;
 use core::panic::PanicInfo;
-use crate::logger::fatal;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     fatal!("{}", info);
-    unsafe { halt(); }
+    unsafe {
+        halt();
+    }
 }

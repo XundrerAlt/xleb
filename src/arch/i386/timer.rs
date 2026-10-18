@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
-use core::sync::atomic::{AtomicU32, Ordering};
 use crate::arch::cpu::outb;
 use crate::arch::interrupt;
-use crate::logger::{debug,verbose};
+use crate::logger::{debug, verbose};
+use core::sync::atomic::{AtomicU32, Ordering};
 
 static TICKS: AtomicU32 = AtomicU32::new(0);
 pub const TICK_HZ: u32 = 100;

@@ -17,8 +17,7 @@
 //
 // Translated from multiboot.h (GRUB manual).
 
-#![allow(non_camel_case_types)]
-#![allow(non_upper_case_globals)]
+#![allow(dead_code)]
 
 // ---------------------------------------------------------------------------
 // Macros
@@ -93,6 +92,21 @@ pub const MULTIBOOT_INFO_APM_TABLE: u32 = 0x0000_0400;
 pub const MULTIBOOT_INFO_VBE_INFO: u32 = 0x0000_0800;
 pub const MULTIBOOT_INFO_FRAMEBUFFER_INFO: u32 = 0x0000_1000;
 
+/// Memory available to the OS.
+pub const MULTIBOOT_MEMORY_AVAILABLE: u32 = 1;
+
+/// Reserved memory (not usable).
+pub const MULTIBOOT_MEMORY_RESERVED: u32 = 2;
+
+/// ACPI reclaimable memory.
+pub const MULTIBOOT_MEMORY_ACPI_RECLAIMABLE: u32 = 3;
+
+/// ACPI NVS memory.
+pub const MULTIBOOT_MEMORY_NVS: u32 = 4;
+
+/// Bad RAM (marked as unusable by firmware).
+pub const MULTIBOOT_MEMORY_BADRAM: u32 = 5;
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -165,15 +179,12 @@ pub struct module_t {
     pub reserved: u32,
 }
 
-/// The memory map. Be careful that the offset 0 is `base_addr_low`
-/// but no size.
+/// The memory map.
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct memory_map_t {
     pub size: u32,
-    pub base_addr_low: u32,
-    pub base_addr_high: u32,
-    pub length_low: u32,
-    pub length_high: u32,
+    pub addr: u64,
+    pub len: u64,
     pub type_: u32,
 }
