@@ -8,6 +8,7 @@ use crate::xleb_test;
 use crate::arch::boot;
 use crate::arch::interrupt;
 use crate::arch::timer;
+use crate::sched;
 use crate::logger::info;
 
 #[unsafe(no_mangle)]
@@ -17,6 +18,7 @@ pub extern "C" fn kinit() -> ! {
         boot::init();
         interrupt::init();
         timer::init();
+        sched::init();
     }
     #[cfg(xleb_tests)]
     {

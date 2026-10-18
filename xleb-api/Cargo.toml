@@ -1,0 +1,8 @@
+[package]
+name = "xleb-api"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Public API for the xleb kernel"
+
+[lib]

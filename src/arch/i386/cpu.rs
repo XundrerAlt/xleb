@@ -49,6 +49,21 @@ pub(crate) unsafe fn halt() -> ! {
     }
 }
 
+// paging
+
+#[inline(always)]
+pub unsafe fn read_cr3() -> u32 {
+    let cr3: u32;
+    unsafe {
+        asm!(
+            "mov {}, cr3",
+            out(reg) cr3,
+            options(nomem, nostack, preserves_flags),
+        );
+    }
+    cr3
+}
+
 // tables
 
 #[repr(C, packed)]
