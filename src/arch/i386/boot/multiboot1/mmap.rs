@@ -135,7 +135,7 @@ pub(crate) unsafe fn process(mbi: &header::multiboot_info_t) {
                         start = kend_phys;
                     }
                     let mut cur = start;
-                    for &(m_start, m_end) in modules::get() {
+                    for &(m_start, m_end) in modules::all().unwrap_or(&[]) {
                         if m_end <= cur || m_start > end {
                             continue;
                         }

@@ -42,6 +42,24 @@ pub(crate) unsafe fn process(mbi: &header::multiboot_info_t) {
     }
 }
 
-pub(crate) fn get() -> &'static [(u32, u32)] {
-    unsafe { &MODULES[..MODULE_COUNT] }
+pub(crate) fn all() -> Option<&'static [(u32, u32)]> {
+    unsafe {
+        let count = core::ptr::addr_of!(MODULE_COUNT).read();
+        if count == 0 {
+            return None;
+        }
+        let ptr = core::ptr::addr_of!(MODULES) as *const (u32, u32);
+        Some(core::slice::from_raw_parts(ptr, count))
+    }
+}
+
+pub(crate) fn get(index: usize) -> Option<(u32, u32)> {
+    unsafe {
+        let count = core::ptr::addr_of!(MODULE_COUNT).read();
+        if index >= count {
+            return None;
+        }
+        let ptr = core::ptr::addr_of!(MODULES) as *const (u32, u32);
+        Some(ptr.add(index).read())
+    }
 }

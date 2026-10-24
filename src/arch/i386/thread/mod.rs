@@ -70,10 +70,6 @@ static mut ROOT_KSTACK: RootKStack = RootKStack([0; STACK_SIZE]);
 struct RootUStack([u8; STACK_SIZE]);
 static mut ROOT_USTACK: RootUStack = RootUStack([0; STACK_SIZE]);
 
-#[repr(C, align(4096))]
-struct RootProg([u8; 4096]);
-static mut ROOT_PROG: RootProg = RootProg([0; 4096]);
-
 static mut ROOT_THREAD: Thread = Thread {
     info: ThreadInfo {
         tid: 0,
@@ -142,21 +138,20 @@ unsafe fn build_user_iret_frame(kstack_top: u32, user_eip: u32, user_esp: u32) -
     }
 }
 
-pub(crate) unsafe fn create_root(prog_ptr: *const u8, prog_size: usize) -> &'static mut Thread {
-    if prog_ptr.is_null() || prog_size == 0 {
+pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static mut Thread {
+    if prog_phys == 0 || prog_size == 0 {
         panic!("create_root: invalid program");
     }
 
     verbose!(
-        "create_root: prog_ptr={:#x} prog_size={:#x}",
-        prog_ptr as u32,
+        "create_root: prog_phys={:#x} prog_size={:#x}",
+        prog_phys,
         prog_size
     );
 
     let th = unsafe { &mut *ptr::addr_of_mut!(ROOT_THREAD) };
     let kstack = unsafe { &mut *ptr::addr_of_mut!(ROOT_KSTACK) };
     let ustack = unsafe { &mut *ptr::addr_of_mut!(ROOT_USTACK) };
-    let prog = unsafe { &mut *ptr::addr_of_mut!(ROOT_PROG) };
     let ctx = unsafe { &mut *ptr::addr_of_mut!(ROOT_CTX) };
     let pd = unsafe { &mut *ptr::addr_of_mut!(ROOT_PD) };
     let code_pt = unsafe { &mut *ptr::addr_of_mut!(ROOT_CODE_PT) };
@@ -166,14 +161,12 @@ pub(crate) unsafe fn create_root(prog_ptr: *const u8, prog_size: usize) -> &'sta
     let pd_ptr = pd.0.as_mut_ptr();
     let code_pt_ptr = code_pt.0.as_mut_ptr();
     let stack_pt_ptr = stack_pt.0.as_mut_ptr();
-    let kernel_pt_ptr = kernel_pt.0.as_mut_ptr();
 
     verbose!(
-        "create_root: ROOT_PD={:#x} ROOT_CODE_PT={:#x} ROOT_STACK_PT={:#x} ROOT_KERNEL_PT={:#x}",
+        "create_root: ROOT_PD={:#x} ROOT_CODE_PT={:#x} ROOT_STACK_PT={:#x}",
         pd_ptr as u32,
         code_pt_ptr as u32,
         stack_pt_ptr as u32,
-        kernel_pt_ptr as u32,
     );
 
     unsafe {
@@ -198,26 +191,9 @@ pub(crate) unsafe fn create_root(prog_ptr: *const u8, prog_size: usize) -> &'sta
         unsafe { *pd_ptr.add(1023) },
     );
 
-    if prog_size > 4096 {
-        panic!("create_root: prog_size {} > 4096", prog_size);
-    }
-
-    let prog_dst = prog.0.as_mut_ptr();
-    unsafe {
-        ptr::copy_nonoverlapping(prog_ptr, prog_dst, prog_size);
-        ptr::write_bytes(prog_dst.add(prog_size), 0, 4096 - prog_size);
-    }
+    let code_phys = prog_phys;
     verbose!(
-        "create_root: copied {} bytes from {:#x} to ROOT_PROG {:#x}",
-        prog_size,
-        prog_ptr as u32,
-        prog_dst as u32,
-    );
-
-    let code_phys = VIRT_TO_PHYS!(prog_dst as u32);
-    verbose!(
-        "create_root: mapping user code: ROOT_PROG={:#x} code_phys={:#x} pages={} -> USER_CODE_ADDR={:#x}",
-        prog_dst as u32,
+        "create_root: mapping user code: code_phys={:#x} pages={} -> USER_CODE_ADDR={:#x}",
         code_phys,
         (prog_size + 0xFFF) / 0x1000,
         USER_CODE_ADDR,

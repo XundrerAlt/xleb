@@ -3,7 +3,7 @@
 mod cmdline;
 mod header;
 mod mmap;
-mod modules;
+pub(crate) mod modules;
 mod section;
 
 use crate::PHYS_TO_VIRT;
