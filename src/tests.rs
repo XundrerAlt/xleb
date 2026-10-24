@@ -19,7 +19,7 @@ macro_rules! xleb_test {
         mod $name {
             #[used]
             #[unsafe(link_section = ".tests")]
-            static ENTRY: $crate::test::TestEntry = $crate::test::TestEntry {
+            static ENTRY: $crate::tests::TestEntry = $crate::tests::TestEntry {
                 name: stringify!($name),
                 func: {
                     fn wrapper() {

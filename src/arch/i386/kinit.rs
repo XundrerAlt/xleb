@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 #[cfg(xleb_tests)]
-use crate::test::run_tests;
+use crate::tests::run_tests;
 #[cfg(xleb_tests)]
 use crate::xleb_test;
 

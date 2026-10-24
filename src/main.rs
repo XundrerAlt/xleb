@@ -9,7 +9,9 @@
 mod arch;
 mod logger;
 mod sched;
-mod test;
+
+#[allow(unused)]
+mod tests;
 
 use crate::logger::fatal;
 use core::panic::PanicInfo;

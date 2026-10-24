@@ -21,21 +21,18 @@ pub(crate) unsafe fn set_current(t: *mut Thread) {
     CURRENT_THREAD.store(t, Ordering::Release);
 }
 
-extern "C" fn idle() {
-    debug!("idle thread!");
-    loop {
-        unsafe {
-            core::arch::asm!("hlt", options(nomem, nostack, preserves_flags));
-        }
-    }
-}
+#[repr(align(4096))]
+struct IdleBin([u8; 16]);
+static IDLE_BIN: IdleBin = IdleBin([
+    0xEB, 0xFE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+]);
 
 pub(crate) unsafe fn init() {
-    let th = unsafe { thread::create_root(idle) };
+    let th = unsafe { thread::create_root(IDLE_BIN.0.as_ptr(), IDLE_BIN.0.len()) };
     RUN_QUEUE.lock().push(th);
     unsafe { set_current(th) };
     debug!("scheduler: hello world");
-    unsafe { thread::switch::do_first(th) };
+    unsafe { thread::switch::do_(th) };
 }
 
 pub(crate) unsafe fn yield_now() {
@@ -86,7 +83,7 @@ pub(crate) unsafe fn yield_now() {
         );
         unsafe {
             set_current(next);
-            thread::switch::do_(current, next);
+            thread::switch::do_(next);
         }
     } else if !current.is_null() {
         unsafe { (*current).info.state = ThreadState::Running };

@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 .section .data
 .align 8
+.global gdt
 gdt:
     # null descriptor (0x00)
     .long 0x00000000
@@ -31,6 +32,8 @@ gdt_ptr:
 gdt_load:
     lgdt (gdt_ptr)
     ljmp $0x08, $reload_cs
+    movw $0x28, %ax
+    ltr %ax
 
 reload_cs:
     movw $0x10, %ax

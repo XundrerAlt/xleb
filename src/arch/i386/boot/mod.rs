@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 mod multiboot1;
+pub(crate) mod tss;
 use core::arch::global_asm;
 
 global_asm!(include_str!("entry.S"), options(att_syntax),); // asm because it sets stack ptr
@@ -9,4 +10,5 @@ global_asm!(include_str!("gdt.S"), options(att_syntax),); // TODO: rewrite to Ru
 
 pub(crate) unsafe fn init() {
     multiboot1::init();
+    tss::init();
 }

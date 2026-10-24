@@ -61,7 +61,7 @@ pub(crate) unsafe fn process(mbi: &header::multiboot_info_t) {
     debug!("- memory map ({} bytes):", mbi.mmap_length);
 
     let mmap_virt = PHYS_TO_VIRT!(mbi.mmap_addr);
-    let mmap_end = mmap_virt + mbi.mmap_length as usize;
+    let mmap_end = mmap_virt + mbi.mmap_length as u32;
 
     let map = unsafe { &mut *core::ptr::addr_of_mut!(MEMORY_MAP) };
     let kend_phys = VIRT_TO_PHYS!(&raw const _kernel_end as usize) as u32;
@@ -72,7 +72,7 @@ pub(crate) unsafe fn process(mbi: &header::multiboot_info_t) {
         let a = entry.addr;
         let mut b = entry.addr.wrapping_add(entry.len);
         if a >= 0x1_0000_0000 {
-            p += entry.size as usize + 4;
+            p += entry.size + 4;
             continue;
         }
         if b > 0x1_0000_0000 {
@@ -82,7 +82,7 @@ pub(crate) unsafe fn process(mbi: &header::multiboot_info_t) {
         let end = (b - 1) as u32;
         let size = (b - a) as u32;
         if size == 0 {
-            p += entry.size as usize + 4;
+            p += entry.size as u32 + 4;
             continue;
         }
         let mut region = MemoryRegion {
@@ -132,7 +132,7 @@ pub(crate) unsafe fn process(mbi: &header::multiboot_info_t) {
         map.region_count += 1;
         map.total_memory += region.size;
 
-        p += entry.size as usize + 4;
+        p += entry.size + 4;
     }
     if map.region_count == 0 {
         panic!("memory_map is empty");

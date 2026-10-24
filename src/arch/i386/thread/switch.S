@@ -15,9 +15,9 @@
     .equ KERNEL_DS,     0x10
 
     .section .text
-    .global switch_to_first
-    .type switch_to_first, @function
-switch_to_first:
+    .global switch_to
+    .type switch_to, @function
+switch_to:
     movl 4(%esp), %eax
     movl 8(%esp), %ecx
     movl 12(%esp), %edx
@@ -29,18 +29,7 @@ switch_to_first:
     movw %ax, %es
     movw %ax, %fs
     movw %ax, %gs
-    movw %ax, %ss
-
-    movl CTX_EDI(%ecx), %edi
-    movl CTX_ESI(%ecx), %esi
-    movl CTX_EBX(%ecx), %ebx
-    movl CTX_EBP(%ecx), %ebp
 
     movl %edx, %esp
-
-    pushl CTX_EFLAGS(%ecx)
-    pushl $KERNEL_CS
-    pushl CTX_EIP(%ecx)
-
     iretl
     .size switch_to_first, . - switch_to_first
