@@ -51,13 +51,13 @@ pub(crate) unsafe fn yield_now() {
     let next = {
         let mut queue = RUN_QUEUE.lock();
         if !current.is_null() {
-            unsafe { (*current).info.state = ThreadState::Ready };
+            unsafe { (*current).state = ThreadState::Ready };
             queue.push(current);
         }
         let n = queue.pop().unwrap_or(current);
         if n.is_null() {
             if !current.is_null() {
-                unsafe { (*current).info.state = ThreadState::Running };
+                unsafe { (*current).state = ThreadState::Running };
             }
             return;
         }
@@ -66,6 +66,6 @@ pub(crate) unsafe fn yield_now() {
     if next != current {
         unsafe { set_current(next); thread::switch::do_(next); }
     } else if !current.is_null() {
-        unsafe { (*current).info.state = ThreadState::Running };
+        unsafe { (*current).state = ThreadState::Running };
     }
 }

@@ -45,6 +45,8 @@ const _: () = {
 #[derive(Debug, Clone, Copy)]
 pub struct Thread {
     pub info: ThreadInfo,
+    pub tid: u32,
+    pub state: ThreadState,
     pub pd_addr: u32,
     pub esp: *mut u32,
     pub context: *mut ThreadContext,
@@ -72,12 +74,12 @@ static mut ROOT_USTACK: RootUStack = RootUStack([0; STACK_SIZE]);
 
 static mut ROOT_THREAD: Thread = Thread {
     info: ThreadInfo {
-        tid: 0,
-        state: ThreadState::Ready,
         stack_top: 0,
         stack_size: 0,
         entry: 0,
     },
+    tid: 0,
+    state: ThreadState::Ready,
     pd_addr: 0,
     esp: core::ptr::null_mut(),
     context: core::ptr::null_mut(),
@@ -242,12 +244,12 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
     ctx.eflags = 0x202;
 
     th.info = ThreadInfo {
-        tid: 0,
-        state: ThreadState::Ready,
         stack_top: kstack_top,
         stack_size: STACK_SIZE as u32,
         entry: USER_CODE_ADDR,
     };
+    th.tid = 0;
+    th.state = ThreadState::Ready;
     th.pd_addr = VIRT_TO_PHYS!(pd_ptr as u32);
     th.esp = frame_esp as *mut u32;
     th.context = ctx as *mut ThreadContext;

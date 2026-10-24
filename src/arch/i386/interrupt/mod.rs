@@ -5,6 +5,7 @@ pub(crate) mod irq;
 mod isr;
 mod pic;
 mod stub;
+mod syscall;
 
 use crate::arch::cpu::{DescriptorTablePointer, enable_interrupts};
 use crate::logger::{debug, verbose};
@@ -56,6 +57,8 @@ pub(crate) unsafe fn init() {
             IDT[i + 32] = IdtEntry::new(IRQ_TABLE[i], 0x08, 0x8E);
         }
         verbose!("irq loaded");
+        IDT[0x80] = IdtEntry::new(syscall_entry as *const () as u32, 0x08, 0xEE);
+        verbose!("syscall initializated");
         let ptr = DescriptorTablePointer {
             limit: (core::mem::size_of::<[IdtEntry; IDT_ENTRIES]>() - 1) as u16,
             base: &raw const IDT as u32,
@@ -75,6 +78,7 @@ unsafe extern "C" {
     static ISR_TABLE: [u32; 32];
     #[link_name = "irq_table"]
     static IRQ_TABLE: [u32; 16];
+    fn syscall_entry();
 }
 
 #[cfg(xleb_tests)]
