@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 
-use core::mem::size_of;
 use crate::logger::debug;
+use core::mem::size_of;
 
 #[repr(C, packed)]
 pub struct TssEntry {
@@ -82,11 +82,7 @@ pub unsafe fn tss_mut() -> &'static mut TssEntry {
 pub fn init() {
     let tss = unsafe { tss_mut() };
     unsafe {
-        core::ptr::write_bytes(
-            tss as *mut TssEntry as *mut u8,
-            0,
-            size_of::<TssEntry>(),
-        );
+        core::ptr::write_bytes(tss as *mut TssEntry as *mut u8, 0, size_of::<TssEntry>());
     }
     tss.ss0 = KERNEL_DS;
     tss.esp0 = core::ptr::addr_of!(stack_top) as u32;

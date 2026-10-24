@@ -3,6 +3,7 @@
 mod cmdline;
 mod header;
 mod mmap;
+mod modules;
 mod section;
 
 use crate::PHYS_TO_VIRT;
@@ -35,6 +36,7 @@ pub(crate) fn init() {
     }
     cmdline::parse(mbi);
     unsafe {
+        modules::process(mbi);
         mmap::process(mbi);
     }
     debug!("multiboot1 info parsing finished");

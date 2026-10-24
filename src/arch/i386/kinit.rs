@@ -6,11 +6,11 @@ use crate::tests::run_tests;
 use crate::xleb_test;
 
 use crate::arch::boot;
+use crate::arch::cpu::halt;
 use crate::arch::interrupt;
 use crate::arch::timer;
 use crate::logger::info;
 use crate::sched;
-use crate::arch::cpu::halt;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn kinit() -> ! {

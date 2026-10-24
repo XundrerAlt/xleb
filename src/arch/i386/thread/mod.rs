@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 use crate::arch::cpu;
-use crate::logger::{info,verbose};
-use xleb_api::{ThreadInfo, ThreadState};
+use crate::logger::{info, verbose};
 use core::ptr;
+use xleb_api::{ThreadInfo, ThreadState};
 
-use crate::{PHYS_TO_VIRT,VIRT_TO_PHYS};
+use crate::{PHYS_TO_VIRT, VIRT_TO_PHYS};
 
 pub(crate) mod switch;
 
@@ -125,32 +125,33 @@ unsafe fn map_region(
     }
 }
 
-
-unsafe fn build_user_iret_frame(
-    kstack_top: u32,
-    user_eip: u32,
-    user_esp: u32,
-) -> u32 {
+unsafe fn build_user_iret_frame(kstack_top: u32, user_eip: u32, user_esp: u32) -> u32 {
     unsafe {
         let mut sp = kstack_top as *mut u32;
-        sp = sp.sub(1); *sp = USER_DS;
-        sp = sp.sub(1); *sp = user_esp;
-        sp = sp.sub(1); *sp = 0x202;
-        sp = sp.sub(1); *sp = USER_CS;
-        sp = sp.sub(1); *sp = user_eip;
+        sp = sp.sub(1);
+        *sp = USER_DS;
+        sp = sp.sub(1);
+        *sp = user_esp;
+        sp = sp.sub(1);
+        *sp = 0x202;
+        sp = sp.sub(1);
+        *sp = USER_CS;
+        sp = sp.sub(1);
+        *sp = user_eip;
         sp as u32
     }
 }
 
-pub(crate) unsafe fn create_root(
-    prog_ptr: *const u8,
-    prog_size: usize,
-) -> &'static mut Thread {
+pub(crate) unsafe fn create_root(prog_ptr: *const u8, prog_size: usize) -> &'static mut Thread {
     if prog_ptr.is_null() || prog_size == 0 {
         panic!("create_root: invalid program");
     }
 
-    verbose!("create_root: prog_ptr={:#x} prog_size={:#x}", prog_ptr as u32, prog_size);
+    verbose!(
+        "create_root: prog_ptr={:#x} prog_size={:#x}",
+        prog_ptr as u32,
+        prog_size
+    );
 
     let th = unsafe { &mut *ptr::addr_of_mut!(ROOT_THREAD) };
     let kstack = unsafe { &mut *ptr::addr_of_mut!(ROOT_KSTACK) };
@@ -169,7 +170,10 @@ pub(crate) unsafe fn create_root(
 
     verbose!(
         "create_root: ROOT_PD={:#x} ROOT_CODE_PT={:#x} ROOT_STACK_PT={:#x} ROOT_KERNEL_PT={:#x}",
-        pd_ptr as u32, code_pt_ptr as u32, stack_pt_ptr as u32, kernel_pt_ptr as u32,
+        pd_ptr as u32,
+        code_pt_ptr as u32,
+        stack_pt_ptr as u32,
+        kernel_pt_ptr as u32,
     );
 
     unsafe {
@@ -190,8 +194,8 @@ pub(crate) unsafe fn create_root(
     }
     verbose!(
         "create_root: PD[768]={:#x} PD[1023]={:#x} (copied)",
-             unsafe { *pd_ptr.add(768) },
-             unsafe { *pd_ptr.add(1023) },
+        unsafe { *pd_ptr.add(768) },
+        unsafe { *pd_ptr.add(1023) },
     );
 
     if prog_size > 4096 {
@@ -205,13 +209,18 @@ pub(crate) unsafe fn create_root(
     }
     verbose!(
         "create_root: copied {} bytes from {:#x} to ROOT_PROG {:#x}",
-        prog_size, prog_ptr as u32, prog_dst as u32,
+        prog_size,
+        prog_ptr as u32,
+        prog_dst as u32,
     );
 
     let code_phys = VIRT_TO_PHYS!(prog_dst as u32);
     verbose!(
         "create_root: mapping user code: ROOT_PROG={:#x} code_phys={:#x} pages={} -> USER_CODE_ADDR={:#x}",
-        prog_dst as u32, code_phys, (prog_size + 0xFFF) / 0x1000, USER_CODE_ADDR,
+        prog_dst as u32,
+        code_phys,
+        (prog_size + 0xFFF) / 0x1000,
+        USER_CODE_ADDR,
     );
     unsafe {
         map_region(
@@ -227,7 +236,9 @@ pub(crate) unsafe fn create_root(
     let ustack_phys = VIRT_TO_PHYS!(ustack.0.as_mut_ptr() as u32);
     verbose!(
         "create_root: mapping user stack: ustack={:#x} ustack_phys={:#x} -> USER_STACK_ADDR={:#x}",
-        ustack.0.as_mut_ptr() as u32, ustack_phys, USER_STACK_ADDR,
+        ustack.0.as_mut_ptr() as u32,
+        ustack_phys,
+        USER_STACK_ADDR,
     );
     unsafe {
         map_page_in(
@@ -245,7 +256,10 @@ pub(crate) unsafe fn create_root(
     let frame_esp = unsafe { build_user_iret_frame(kstack_top, USER_CODE_ADDR, user_esp) };
     verbose!(
         "create_root: kstack_base={:#x} kstack_top={:#x} user_esp={:#x} frame_esp={:#x}",
-        kstack_base, kstack_top, user_esp, frame_esp,
+        kstack_base,
+        kstack_top,
+        user_esp,
+        frame_esp,
     );
 
     ctx.eip = USER_CODE_ADDR;
@@ -267,7 +281,9 @@ pub(crate) unsafe fn create_root(
 
     verbose!(
         "create_root: th.pd_addr={:#x} th.esp={:#x} th.stack_limit={:#x}",
-        th.pd_addr, th.esp as u32, th.stack_limit as u32,
+        th.pd_addr,
+        th.esp as u32,
+        th.stack_limit as u32,
     );
     info!("Root thread initialized");
     th

@@ -23,9 +23,7 @@ pub(crate) unsafe fn set_current(t: *mut Thread) {
 
 #[repr(align(4096))]
 struct IdleBin([u8; 16]);
-static IDLE_BIN: IdleBin = IdleBin([
-    0xEB, 0xFE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-]);
+static IDLE_BIN: IdleBin = IdleBin([0xEB, 0xFE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 
 pub(crate) unsafe fn init() {
     let th = unsafe { thread::create_root(IDLE_BIN.0.as_ptr(), IDLE_BIN.0.len()) };
@@ -60,7 +58,11 @@ pub(crate) unsafe fn yield_now() {
         verbose!(
             "sched: pop {:p} tid={}",
             n,
-            if n.is_null() { 0 } else { unsafe { (*n).info.tid } }
+            if n.is_null() {
+                0
+            } else {
+                unsafe { (*n).info.tid }
+            }
         );
         n
     };

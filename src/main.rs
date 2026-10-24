@@ -13,9 +13,9 @@ mod sched;
 #[allow(unused)]
 mod tests;
 
+use crate::arch::cpu::halt;
 use crate::logger::fatal;
 use core::panic::PanicInfo;
-use crate::arch::cpu::halt;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {

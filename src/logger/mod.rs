@@ -96,7 +96,7 @@ pub(crate) use info;
 macro_rules! warning {
     ($($arg:tt)*) => {
         $crate::logger::log(
-            $crate::logger::LogLevel::Warn,
+            $crate::logger::LogLevel::Warning,
             format_args!($($arg)*),
         )
     };

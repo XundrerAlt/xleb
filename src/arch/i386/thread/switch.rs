@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 
-use core::arch::{asm, global_asm};
-use core::mem::offset_of;
 use crate::arch::boot::tss;
 use crate::logger::debug;
+use core::arch::{asm, global_asm};
+use core::mem::offset_of;
 
 use super::{Thread, ThreadContext};
 

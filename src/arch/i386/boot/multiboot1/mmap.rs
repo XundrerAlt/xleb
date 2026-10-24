@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 use super::header;
-use crate::logger::debug;
+use super::modules;
+use crate::logger::{debug, verbose, warning};
 use crate::{PHYS_TO_VIRT, VIRT_TO_PHYS};
 
 pub const MAX_MEMORY_REGIONS: usize = 64;
@@ -52,6 +53,23 @@ impl MemoryMap {
     }
 }
 
+fn push_region(map: &mut MemoryMap, r: MemoryRegion) {
+    if map.region_count >= MAX_MEMORY_REGIONS {
+        warning!("memory map: too many regions (max {})", MAX_MEMORY_REGIONS);
+        return;
+    }
+    debug!(
+        "  - [0x{:x} - 0x{:x}] {:?} ({} KB)",
+        r.start,
+        r.end,
+        r.type_,
+        r.size / 1024
+    );
+    map.regions[map.region_count] = r;
+    map.region_count += 1;
+    map.total_memory += r.size;
+}
+
 pub static mut MEMORY_MAP: MemoryMap = MemoryMap::new();
 
 pub(crate) unsafe fn process(mbi: &header::multiboot_info_t) {
@@ -93,44 +111,140 @@ pub(crate) unsafe fn process(mbi: &header::multiboot_info_t) {
         };
         match entry.type_ {
             header::MULTIBOOT_MEMORY_AVAILABLE => {
+                verbose!("kend_phys = {:#x}", kend_phys);
+                verbose!(
+                    "region: start={:#x} end={:#x} type={}",
+                    start,
+                    end,
+                    entry.type_
+                );
                 if end <= kend_phys {
-                    region.type_ = MemoryType::Reserved;
+                    verbose!("  -> all reserved (end <= kend_phys)");
+                    push_region(
+                        map,
+                        MemoryRegion {
+                            start,
+                            end,
+                            size: end - start + 1,
+                            type_: MemoryType::Reserved,
+                        },
+                    );
                 } else {
+                    verbose!("  -> splitting around modules");
                     if start < kend_phys {
                         start = kend_phys;
-                        region.start = start;
-                        region.size = end - start + 1;
                     }
-                    region.type_ = MemoryType::Available;
-                    map.available_memory += region.size;
+                    let mut cur = start;
+                    for &(m_start, m_end) in modules::get() {
+                        if m_end <= cur || m_start > end {
+                            continue;
+                        }
+                        if m_start > cur {
+                            let a_end = core::cmp::min(m_start - 1, end);
+                            if a_end >= cur {
+                                let sz = a_end - cur + 1;
+                                push_region(
+                                    map,
+                                    MemoryRegion {
+                                        start: cur,
+                                        end: a_end,
+                                        size: sz,
+                                        type_: MemoryType::Available,
+                                    },
+                                );
+                                map.available_memory += sz;
+                            }
+                        }
+                        let r_start = core::cmp::max(m_start, cur);
+                        let r_end = core::cmp::min(m_end - 1, end);
+                        if r_end >= r_start {
+                            let sz = r_end - r_start + 1;
+                            push_region(
+                                map,
+                                MemoryRegion {
+                                    start: r_start,
+                                    end: r_end,
+                                    size: sz,
+                                    type_: MemoryType::Reserved,
+                                },
+                            );
+                        }
+                        cur = core::cmp::max(cur, m_end);
+                        if cur > end {
+                            break;
+                        }
+                    }
+                    if cur <= end {
+                        let sz = end - cur + 1;
+                        push_region(
+                            map,
+                            MemoryRegion {
+                                start: cur,
+                                end,
+                                size: sz,
+                                type_: MemoryType::Available,
+                            },
+                        );
+                        map.available_memory += sz;
+                    }
                 }
             }
             header::MULTIBOOT_MEMORY_RESERVED => {
-                region.type_ = MemoryType::Reserved;
+                push_region(
+                    map,
+                    MemoryRegion {
+                        start,
+                        end,
+                        size,
+                        type_: MemoryType::Reserved,
+                    },
+                );
             }
             header::MULTIBOOT_MEMORY_ACPI_RECLAIMABLE => {
-                region.type_ = MemoryType::AcpiReclaimable;
+                push_region(
+                    map,
+                    MemoryRegion {
+                        start,
+                        end,
+                        size,
+                        type_: MemoryType::AcpiReclaimable,
+                    },
+                );
             }
             header::MULTIBOOT_MEMORY_NVS => {
-                region.type_ = MemoryType::AcpiNvs;
+                push_region(
+                    map,
+                    MemoryRegion {
+                        start,
+                        end,
+                        size,
+                        type_: MemoryType::AcpiNvs,
+                    },
+                );
             }
             header::MULTIBOOT_MEMORY_BADRAM => {
-                region.type_ = MemoryType::BadRam;
+                push_region(
+                    map,
+                    MemoryRegion {
+                        start,
+                        end,
+                        size,
+                        type_: MemoryType::BadRam,
+                    },
+                );
             }
             _ => {
-                region.type_ = MemoryType::Reserved;
+                push_region(
+                    map,
+                    MemoryRegion {
+                        start,
+                        end,
+                        size,
+                        type_: MemoryType::Reserved,
+                    },
+                );
             }
         }
-        debug!(
-            "  - [0x{:x} - 0x{:x}] {:?} ({} KB)",
-            region.start,
-            region.end,
-            region.type_,
-            region.size / 1024
-        );
-        map.regions[map.region_count] = region;
-        map.region_count += 1;
-        map.total_memory += region.size;
 
         p += entry.size + 4;
     }
