@@ -1,0 +1,25 @@
+[package]
+name = "xleb"
+version = "0.1.1"
+edition = "2024"
+license = "GPL-3.0-or-later"
+
+[[bin]]
+path = "src/main.rs"
+name = "kernel"
+test = false
+
+[dependencies]
+xleb-api = { path = "xleb-api" }
+spin = { version = "0.12.3", default-features = false, features = ["mutex", "spin_mutex"] }
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+opt-level = "z"
+
+[features]
+default = []
+verbose = []

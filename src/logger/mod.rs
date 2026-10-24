@@ -1,0 +1,124 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 XundrerAlt
+use crate::arch::uart;
+use core::fmt;
+use core::fmt::Write;
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LogLevel {
+    Verbose,
+    Debug,
+    Info,
+    Warning,
+    Error,
+    Fatal,
+}
+
+impl LogLevel {
+    fn as_str(&self) -> &'static str {
+        match self {
+            LogLevel::Verbose => "V",
+            LogLevel::Debug => "D",
+            LogLevel::Info => "I",
+            LogLevel::Warning => "W",
+            LogLevel::Error => "E",
+            LogLevel::Fatal => "F",
+        }
+    }
+    fn color(&self) -> &'static str {
+        match self {
+            LogLevel::Verbose => "\x1b[0m",
+            LogLevel::Debug => "\x1b[36m",
+            LogLevel::Info => "\x1b[32m",
+            LogLevel::Warning => "\x1b[33m",
+            LogLevel::Error => "\x1b[31m",
+            LogLevel::Fatal => "\x1b[31m",
+        }
+    }
+}
+
+struct UartWriter;
+impl fmt::Write for UartWriter {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        for &b in s.as_bytes() {
+            uart::uart_putc(b);
+        }
+        Ok(())
+    }
+}
+
+pub(crate) fn log(level: LogLevel, args: fmt::Arguments) {
+    let mut writer = UartWriter;
+    let _ = write!(writer, "{}{}{}:\x1b[0m ", level.color(), "", level.as_str());
+    let _ = writer.write_fmt(args);
+    let _ = writer.write_str("\n");
+}
+
+// macros
+
+#[cfg(feature = "verbose")]
+macro_rules! verbose {
+    ($($arg:tt)*) => {
+        $crate::logger::log(
+            $crate::logger::LogLevel::Verbose,
+            format_args!($($arg)*),
+        )
+    };
+}
+#[cfg(not(feature = "verbose"))]
+macro_rules! verbose {
+    ($($arg:tt)*) => {};
+}
+
+pub(crate) use verbose;
+
+macro_rules! debug {
+    ($($arg:tt)*) => {
+        $crate::logger::log(
+            $crate::logger::LogLevel::Debug,
+            format_args!($($arg)*),
+        )
+    };
+}
+pub(crate) use debug;
+
+macro_rules! info {
+    ($($arg:tt)*) => {
+        $crate::logger::log(
+            $crate::logger::LogLevel::Info,
+            format_args!($($arg)*),
+        )
+    };
+}
+pub(crate) use info;
+
+macro_rules! warning {
+    ($($arg:tt)*) => {
+        $crate::logger::log(
+            $crate::logger::LogLevel::Warn,
+            format_args!($($arg)*),
+        )
+    };
+}
+pub(crate) use warning;
+
+macro_rules! error {
+    ($($arg:tt)*) => {
+        $crate::logger::log(
+            $crate::logger::LogLevel::Error,
+            format_args!($($arg)*),
+        )
+    };
+}
+pub(crate) use error;
+
+macro_rules! fatal {
+    ($($arg:tt)*) => {
+        $crate::logger::log(
+            $crate::logger::LogLevel::Fatal,
+            format_args!($($arg)*),
+        )
+    };
+}
+pub(crate) use fatal;
