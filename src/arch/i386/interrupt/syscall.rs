@@ -90,7 +90,7 @@ fn sys_cap_retype(frame: &mut SyscallFrame) -> i32 {
     }
 
     let cap_type = match CapType::try_from(type_) {
-        Ok(t) if t != CapType::None && t != CapType::Untyped => t,
+        Ok(t) if t != CapType::None => t,
         _ => {
             verbose!("sys_cap_retype: invalid type_={}", type_);
             return EINVAL.into();
