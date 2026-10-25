@@ -53,7 +53,8 @@ impl Cap {
         }
         if self.type_ == CapType::Untyped
             && object >= self.object
-            && object < self.object + self.size {
+            && object < self.object + self.size
+        {
             return true;
         }
         false

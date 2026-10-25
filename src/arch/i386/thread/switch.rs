@@ -9,7 +9,7 @@ use core::mem::offset_of;
 use super::{Thread, ThreadContext};
 
 const ESP_OFF: usize = core::mem::offset_of!(Thread, esp);
-const PD_OFF: usize = core::mem::offset_of!(Thread, pd_addr);
+const PD_OFF: usize = core::mem::offset_of!(Thread, vspace);
 const CTX_OFF: usize = core::mem::offset_of!(Thread, context);
 
 const CTX_EDI: usize = offset_of!(ThreadContext, edi);
@@ -28,7 +28,7 @@ unsafe extern "C" {
 const KERNEL_DS: u32 = 0x10;
 
 pub unsafe fn do_(new: *mut Thread) -> ! {
-    let pd = unsafe { (*new).pd_addr };
+    let pd = unsafe { (*new).vspace };
     let ctx = unsafe { (*new).context };
     let esp = unsafe { (*new).esp } as u32;
     tss::set_stack(unsafe { (*new).info.stack_top });

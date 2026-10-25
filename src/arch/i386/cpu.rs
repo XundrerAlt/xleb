@@ -76,6 +76,17 @@ pub unsafe fn read_cr2() -> u32 {
     cr2
 }
 
+#[inline]
+pub unsafe fn invlpg(virt: u32) {
+    unsafe {
+        core::arch::asm!(
+            "invlpg [{0}]",
+             in(reg) virt,
+             options(nostack, preserves_flags),
+        );
+    }
+}
+
 // tables
 
 #[repr(C, packed)]

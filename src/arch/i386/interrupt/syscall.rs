@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
-use crate::logger::{verbose,warning};
+use crate::arch::mm::temp_window::TempWindow;
+use crate::arch::mm::{PAGE_PRESENT, PAGE_USER, PAGE_WRITE};
+use crate::arch::thread::VSPACE_ADDR;
+use crate::cap::{CAP_ALL, CAP_READ, CAP_WRITE, Cap};
+use crate::logger::{verbose, warning};
 use crate::sched::CURRENT_THREAD;
 use core::sync::atomic::Ordering;
 use xleb_api::CapType;
 use xleb_api::SyscallErrno::{self, *};
 use xleb_api::SyscallNum::{self, *};
-use crate::cap::{Cap,CAP_ALL,CAP_WRITE};
 
 #[repr(C)]
 pub struct SyscallFrame {
@@ -66,6 +69,7 @@ fn sys_cap_retype(frame: &mut SyscallFrame) -> i32 {
 
     let size = match cap_type {
         CapType::Page => 4096,
+        CapType::VNode => 4096,
         CapType::CNode | CapType::Untyped => frame.edx as usize,
         CapType::None => {
             verbose!("sys_cap_retype: None is invalid");
@@ -74,18 +78,27 @@ fn sys_cap_retype(frame: &mut SyscallFrame) -> i32 {
     };
 
     let current = CURRENT_THREAD.load(Ordering::Acquire);
-    if current.is_null() { return EPERM.into(); }
+    if current.is_null() {
+        return EPERM.into();
+    }
     let cspace = unsafe { &mut (*current).cspace };
     let untyped = match cspace.get(untyped_idx) {
         Some(cap) if cap.type_ == CapType::Untyped && cap.has(CAP_WRITE) => *cap,
         _ => {
-            verbose!("sys_cap_retype: untyped_idx={} isn't untyped/CAP_WRITE", untyped_idx);
+            verbose!(
+                "sys_cap_retype: untyped_idx={} isn't untyped/CAP_WRITE",
+                untyped_idx
+            );
             return EINVAL.into();
         }
     };
 
     if size == 0 || size > untyped.size {
-        verbose!("sys_cap_retype: size={} > untyped.size={}", size, untyped.size);
+        verbose!(
+            "sys_cap_retype: size={} > untyped.size={}",
+            size,
+            untyped.size
+        );
         return EINVAL.into();
     }
 
@@ -108,12 +121,58 @@ fn sys_cap_retype(frame: &mut SyscallFrame) -> i32 {
 
     if let Some(untyped_mut) = cspace.get_mut(untyped_idx) {
         untyped_mut.size -= size;
+        untyped_mut.object += size;
     }
 
-    verbose!("sys_cap_retype: untyped[{}] -> {:?} idx={} size={}",
-           untyped_idx, cap_type, new_idx, size);
+    verbose!(
+        "sys_cap_retype: untyped[{}] -> {:?} idx={} size={}",
+        untyped_idx,
+        cap_type,
+        new_idx,
+        size
+    );
 
     new_idx as i32
+}
+
+fn sys_cap_map(frame: &mut SyscallFrame) -> i32 {
+    let vnode_idx = frame.ebx as usize;
+    let frame_idx = frame.ecx as usize;
+    let vaddr = frame.edx;
+
+    let current = CURRENT_THREAD.load(Ordering::Acquire);
+    if current.is_null() { return EPERM.into(); }
+    let cspace = unsafe { &mut (*current).cspace };
+
+    let vnode_cap = match cspace.get(vnode_idx) {
+        Some(cap) if cap.type_ == CapType::VNode && cap.has(CAP_WRITE) => *cap,
+        _ => { verbose!("sys_cap_map: vnode_idx={} isn't PT/CAP_WRITE", vnode_idx); return EINVAL.into(); }
+    };
+    let frame_cap = match cspace.get(frame_idx) {
+        Some(cap) if cap.type_ == CapType::Page && cap.has(CAP_READ) => *cap,
+        _ => { verbose!("sys_cap_map: frame_idx={} isn't Page/CAP_READ", frame_idx); return EINVAL.into(); }
+    };
+
+    if vaddr & 0xFFF != 0 { verbose!("sys_cap_map: vaddr={:#x} not page-aligned", vaddr); return EINVAL.into(); }
+
+    let vnode_phys = vnode_cap.object as u32;
+    let frame_phys = frame_cap.object as u32;
+    let pd_index = (vaddr >> 22) as usize;
+    let pt_index = ((vaddr >> 12) & 0x3FF) as usize;
+
+    let flags = PAGE_PRESENT | PAGE_USER | (if frame_cap.has(CAP_WRITE) { PAGE_WRITE } else { 0 });
+
+    unsafe {
+        let mut win = TempWindow::map(vnode_phys, 4096);
+        let pt = win.as_mut_ptr() as *mut u32;
+        *pt.add(pt_index) = frame_phys | flags;
+
+        let pd = VSPACE_ADDR as *mut u32;
+        *pd.add(pd_index) = vnode_phys | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+    }
+
+    verbose!("sys_cap_map: frame={:#x} -> vnode={:#x} vaddr={:#x}", frame_phys, vnode_phys, vaddr);
+    vaddr as i32
 }
 
 #[unsafe(no_mangle)]
@@ -128,6 +187,7 @@ pub unsafe extern "C" fn syscall_handler(frame: &mut SyscallFrame) {
         }
         Ok(CapFind) => sys_cap_find(f),
         Ok(CapRetype) => sys_cap_retype(f),
+        Ok(CapMap) => sys_cap_map(f),
         _ => {
             verbose!("Unknown syscall");
             ENOSYS.into()

@@ -3,25 +3,22 @@
 use crate::arch::boot::bootinfo;
 use crate::arch::boot::mmap::{MEMORY_MAP, MemoryType};
 use crate::arch::cpu;
+use crate::arch::mm::{PAGE_PRESENT, PAGE_USER, PAGE_WRITE, PageDir, PageTable, map_page_in};
 use crate::cap::{CAP_ALL, CNode, Cap};
 use crate::logger::{info, verbose};
+use crate::{PHYS_TO_VIRT, VIRT_TO_PHYS};
 use core::ptr;
 use xleb_api::{BOOTINFO_ADDR, CapType, ThreadInfo, ThreadState};
-
-use crate::{PHYS_TO_VIRT, VIRT_TO_PHYS};
 
 pub(crate) mod switch;
 
 pub const USER_STACK_ADDR: u32 = 0x4000_0000;
 pub const USER_CODE_ADDR: u32 = 0x4100_0000;
+pub const VSPACE_ADDR: u32 = 0xD000_0000;
 pub const STACK_SIZE: usize = 4096;
 
 const USER_CS: u32 = 0x1B;
 const USER_DS: u32 = 0x23;
-
-const PAGE_PRESENT: u32 = 1 << 0;
-const PAGE_WRITE: u32 = 1 << 1;
-const PAGE_USER: u32 = 1 << 2;
 
 #[repr(C)]
 #[derive(Debug)]
@@ -50,7 +47,7 @@ pub struct Thread {
     pub info: ThreadInfo,
     pub tid: u32,
     pub state: ThreadState,
-    pub pd_addr: u32,
+    pub vspace: u32,
     pub esp: *mut u32,
     pub context: *mut ThreadContext,
     pub stack_limit: *mut u8,
@@ -59,15 +56,12 @@ pub struct Thread {
     pub cspace: CNode,
 }
 
-#[repr(C, align(4096))]
-struct PageTable([u32; 1024]);
-#[repr(C, align(4096))]
-struct PageDir([u32; 1024]);
 static mut ROOT_PD: PageDir = PageDir([0; 1024]);
 static mut ROOT_CODE_PT: PageTable = PageTable([0; 1024]);
 static mut ROOT_STACK_PT: PageTable = PageTable([0; 1024]);
 static mut ROOT_KERNEL_PT: PageTable = PageTable([0; 1024]);
 static mut ROOT_BOOTINFO_PT: PageTable = PageTable([0; 1024]);
+static mut ROOT_VSPACE_PT: PageTable = PageTable([0; 1024]);
 
 #[repr(C, align(16))]
 struct RootKStack([u8; STACK_SIZE]);
@@ -85,7 +79,7 @@ static mut ROOT_THREAD: Thread = Thread {
     },
     tid: 0,
     state: ThreadState::Ready,
-    pd_addr: 0,
+    vspace: 0,
     esp: core::ptr::null_mut(),
     context: core::ptr::null_mut(),
     stack_limit: core::ptr::null_mut(),
@@ -102,16 +96,6 @@ static mut ROOT_CTX: ThreadContext = ThreadContext {
     eflags: 0x202,
     eip: 0,
 };
-
-unsafe fn map_page_in(pd: *mut u32, pt: *mut u32, va: u32, phys: u32, flags: u32) {
-    let pd_idx = (va >> 22) as usize;
-    let pt_idx = ((va >> 12) & 0x3FF) as usize;
-    unsafe {
-        let pt_phys = VIRT_TO_PHYS!(pt as u32);
-        *pd.add(pd_idx) = pt_phys | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
-        *pt.add(pt_idx) = (phys & !0xFFF) | flags;
-    }
-}
 
 unsafe fn map_region(
     pd: *mut u32,
@@ -166,11 +150,13 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
     let stack_pt = unsafe { &mut *ptr::addr_of_mut!(ROOT_STACK_PT) };
     let kernel_pt = unsafe { &mut *ptr::addr_of_mut!(ROOT_KERNEL_PT) };
     let bootinfo_pt = unsafe { &mut *ptr::addr_of_mut!(ROOT_BOOTINFO_PT) };
+    let vspace_pt = unsafe { &mut *ptr::addr_of_mut!(ROOT_VSPACE_PT) };
 
     let pd_ptr = pd.0.as_mut_ptr();
     let code_pt_ptr = code_pt.0.as_mut_ptr();
     let stack_pt_ptr = stack_pt.0.as_mut_ptr();
     let bootinfo_pt_ptr = bootinfo_pt.0.as_mut_ptr();
+    let vspace_pt_ptr = vspace_pt.0.as_mut_ptr();
 
     verbose!(
         "create_root: ROOT_PD={:#x} ROOT_CODE_PT={:#x} ROOT_STACK_PT={:#x}",
@@ -257,6 +243,21 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
         );
     }
 
+    verbose!(
+        "create_root: mapping thread's vspace: vspace={:#x} -> VSPACE_ADDR={:#x}",
+        VIRT_TO_PHYS!(pd_ptr as u32),
+        VSPACE_ADDR,
+    );
+    unsafe {
+        map_page_in(
+            pd_ptr,
+            vspace_pt_ptr,
+            VSPACE_ADDR,
+            VIRT_TO_PHYS!(pd_ptr as u32),
+            PAGE_PRESENT | PAGE_WRITE,
+        );
+    }
+
     let kstack_base = kstack.0.as_mut_ptr() as u32;
     let kstack_top = (kstack_base + STACK_SIZE as u32) & !0xF;
     let user_esp = USER_STACK_ADDR + STACK_SIZE as u32;
@@ -279,7 +280,7 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
     };
     th.tid = 0;
     th.state = ThreadState::Ready;
-    th.pd_addr = VIRT_TO_PHYS!(pd_ptr as u32);
+    th.vspace = VIRT_TO_PHYS!(pd_ptr as u32);
     th.esp = frame_esp as *mut u32;
     th.context = ctx as *mut ThreadContext;
     th.stack_limit = kstack_base as *mut u8;
@@ -304,8 +305,8 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
     }
 
     verbose!(
-        "create_root: th.pd_addr={:#x} th.esp={:#x} th.stack_limit={:#x}",
-        th.pd_addr,
+        "create_root: th.vspace={:#x} th.esp={:#x} th.stack_limit={:#x}",
+        th.vspace,
         th.esp as u32,
         th.stack_limit as u32,
     );
