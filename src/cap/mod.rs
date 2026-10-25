@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 use crate::logger::verbose;
+use xleb_api::CapType;
 
 pub const MAX_CAPS: usize = 64;
 
@@ -11,33 +12,29 @@ pub const CAP_GRANT: u32 = 1 << 3;
 pub const CAP_REVOKE: u32 = 1 << 4;
 pub const CAP_ALL: u32 = CAP_READ | CAP_WRITE | CAP_EXEC | CAP_GRANT | CAP_REVOKE;
 
-const WILDCARD: u32 = u32::MAX; // TODO: delete it
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CapType {
-    None,
-    CNode,
-    Untyped,
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Cap {
     pub type_: CapType,
-    pub object: u32,
+    pub object: usize,
+    pub size: usize,
     pub rights: u32,
 }
 
 impl Cap {
+    pub const WILDCARD: usize = usize::MAX; // TODO: remove wildcard
+
     pub const NONE: Cap = Cap {
         type_: CapType::None,
         object: 0,
+        size: 0,
         rights: 0,
     };
 
-    pub const fn new(type_: CapType, object: u32, rights: u32) -> Self {
+    pub const fn new(type_: CapType, object: usize, size: usize, rights: u32) -> Self {
         Self {
             type_,
             object,
+            size,
             rights,
         }
     }
@@ -45,14 +42,13 @@ impl Cap {
     pub fn is_none(&self) -> bool {
         self.type_ == CapType::None
     }
-
     pub fn has(&self, rights: u32) -> bool {
         (self.rights & rights) == rights
     }
 
-    pub fn check(&self, type_: CapType, object: u32, rights: u32) -> bool {
+    pub fn check(&self, type_: CapType, object: usize, rights: u32) -> bool {
         self.type_ == type_
-            && (self.object == object || self.object == WILDCARD)
+            && (self.object == object || self.object == Self::WILDCARD)
             && self.has(rights)
     }
 }
@@ -83,7 +79,7 @@ impl CNode {
         }
     }
 
-    pub fn check(&self, type_: CapType, object: u32, rights: u32) -> Option<&Cap> {
+    pub fn check(&self, type_: CapType, object: usize, rights: u32) -> Option<&Cap> {
         self.slots
             .iter()
             .find(|cap| cap.check(type_, object, rights))
@@ -98,12 +94,9 @@ impl CNode {
         Some(i)
     }
 
-    pub unsafe fn grant_all(&mut self) {
-        let self_addr = self as *mut CNode as u32;
-        verbose!("CNode::grant_all: begin (self_addr={:#x})", self_addr);
-        // TODO: remove wildcards
-        self.insert(Some(0), Cap::new(CapType::Untyped, u32::MAX, CAP_ALL));
-        self.insert(Some(1), Cap::new(CapType::CNode, self_addr, CAP_ALL));
-        verbose!("CNode::grant_all: end");
+    pub fn find(&self, type_: CapType, object: usize, rights: u32) -> Option<usize> {
+        self.slots
+            .iter()
+            .position(|cap| cap.check(type_, object, rights))
     }
 }

@@ -9,3 +9,6 @@ pub use bootinfo::*;
 
 pub mod types;
 pub use types::*;
+
+pub mod syscall;
+pub use syscall::*;

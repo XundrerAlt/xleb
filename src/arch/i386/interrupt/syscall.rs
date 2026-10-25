@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
-use crate::logger::debug;
+use crate::logger::verbose;
+use crate::sched::CURRENT_THREAD;
+use core::sync::atomic::Ordering;
+use xleb_api::CapType;
+use xleb_api::SyscallErrno::*;
+use xleb_api::SyscallNum;
+use xleb_api::SyscallNum::*;
 
 #[repr(C)]
 pub struct SyscallFrame {
@@ -25,26 +31,44 @@ pub struct SyscallFrame {
     pub eip: u32,
 }
 
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn syscall_handler(frame: *mut SyscallFrame) {
-    if frame.is_null() {
-        return;
+fn sys_cap_find(frame: &mut SyscallFrame) -> i32 {
+    let type_ = frame.ebx;
+    let object = frame.ecx as usize;
+    let rights = frame.edx;
+
+    let current = CURRENT_THREAD.load(Ordering::Acquire);
+    if current.is_null() {
+        return -1;
     }
+
+    let cap_type = match CapType::try_from(type_) {
+        Ok(t) => t,
+        Err(_) => return EINVAL.into(),
+    };
+
+    let cspace = unsafe { &(*current).cspace };
+    match cspace.find(cap_type, object, rights) {
+        Some(idx) => idx as i32,
+        None => ENOENT.into(),
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn syscall_handler(frame: &mut SyscallFrame) {
     let f = unsafe { &mut *frame };
 
     let nr = f.eax;
-    let arg0 = f.ebx;
-    let arg1 = f.ecx;
-    let arg2 = f.edx;
-    let arg3 = f.esi;
-    let arg4 = f.edi;
-
-    let ret: i32 = match nr {
-        0 => {
-            debug!("SYSCALL!");
+    let ret: i32 = match SyscallNum::try_from(nr) {
+        Ok(Test) => {
+            verbose!("SYSCALL!");
             0
         }
-        _ => -38,
+        Ok(CapFind) => sys_cap_find(f),
+        _ => {
+            verbose!("Unknown syscall");
+            ENOSYS.into()
+        }
     };
+
     f.eax = ret as u32;
 }

@@ -22,17 +22,17 @@ pub enum MemoryType {
 
 #[derive(Debug, Clone, Copy)]
 pub struct MemoryRegion {
-    pub start: u32,
-    pub end: u32,
-    pub size: u32,
+    pub start: usize,
+    pub end: usize,
+    pub size: usize,
     pub type_: MemoryType,
 }
 
 pub struct MemoryMap {
     pub regions: [MemoryRegion; MAX_MEMORY_REGIONS],
     pub region_count: usize,
-    pub total_memory: u32,
-    pub available_memory: u32,
+    pub total_memory: usize,
+    pub available_memory: usize,
 }
 
 impl MemoryMap {
@@ -77,11 +77,11 @@ pub(crate) unsafe fn process(mbi: &header::multiboot_info_t) {
     }
     debug!("- memory map ({} bytes):", mbi.mmap_length);
 
-    let mmap_virt = PHYS_TO_VIRT!(mbi.mmap_addr);
-    let mmap_end = mmap_virt + mbi.mmap_length as u32;
+    let mmap_virt = PHYS_TO_VIRT!(mbi.mmap_addr) as usize;
+    let mmap_end = mmap_virt + mbi.mmap_length as usize;
 
     let map = unsafe { &mut *core::ptr::addr_of_mut!(MEMORY_MAP) };
-    let kend_phys = VIRT_TO_PHYS!(&raw const _kernel_end as usize) as u32;
+    let kend_phys = VIRT_TO_PHYS!(&raw const _kernel_end as usize) as usize;
 
     let mut p = mmap_virt;
     while p < mmap_end && map.region_count < MAX_MEMORY_REGIONS {
@@ -89,17 +89,17 @@ pub(crate) unsafe fn process(mbi: &header::multiboot_info_t) {
         let a = entry.addr;
         let mut b = entry.addr.wrapping_add(entry.len);
         if a >= 0x1_0000_0000 {
-            p += entry.size + 4;
+            p += entry.size as usize + 4;
             continue;
         }
         if b > 0x1_0000_0000 {
             b = 0x1_0000_0000;
         }
-        let mut start = a as u32;
-        let end = (b - 1) as u32;
-        let size = (b - a) as u32;
+        let mut start = a as usize;
+        let end = (b - 1) as usize;
+        let size = (b - a) as usize;
         if size == 0 {
-            p += entry.size as u32 + 4;
+            p += entry.size as usize + 4;
             continue;
         }
         let mut region = MemoryRegion {
@@ -135,6 +135,8 @@ pub(crate) unsafe fn process(mbi: &header::multiboot_info_t) {
                     }
                     let mut cur = start;
                     for &(m_start, m_end) in modules::all().unwrap_or(&[]) {
+                        let m_start = m_start as usize;
+                        let m_end = m_end as usize;
                         if m_end <= cur || m_start > end {
                             continue;
                         }
@@ -244,8 +246,7 @@ pub(crate) unsafe fn process(mbi: &header::multiboot_info_t) {
                 );
             }
         }
-
-        p += entry.size + 4;
+        p += entry.size as usize + 4;
     }
     if map.region_count == 0 {
         panic!("memory_map is empty");

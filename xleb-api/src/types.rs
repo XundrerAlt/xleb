@@ -25,3 +25,22 @@ const _: () = {
     assert!(core::mem::size_of::<ThreadState>() == 4);
     assert!(core::mem::align_of::<ThreadState>() == 4);
 };
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CapType {
+    None = 0,
+    CNode = 1,
+    Untyped = 2,
+}
+
+impl TryFrom<u32> for CapType {
+    type Error = ();
+    fn try_from(v: u32) -> Result<CapType, ()> {
+        match v {
+            0 => Ok(CapType::None),
+            1 => Ok(CapType::CNode),
+            2 => Ok(CapType::Untyped),
+            _ => Err(()),
+        }
+    }
+}

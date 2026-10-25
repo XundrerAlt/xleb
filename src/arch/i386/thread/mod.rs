@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 use crate::arch::boot::bootinfo;
+use crate::arch::boot::mmap::{MEMORY_MAP, MemoryType};
 use crate::arch::cpu;
-use crate::cap::CNode;
+use crate::cap::{CAP_ALL, CNode, Cap};
 use crate::logger::{info, verbose};
 use core::ptr;
-use xleb_api::{BOOTINFO_ADDR, ThreadInfo, ThreadState};
+use xleb_api::{BOOTINFO_ADDR, CapType, ThreadInfo, ThreadState};
 
 use crate::{PHYS_TO_VIRT, VIRT_TO_PHYS};
 
@@ -284,8 +285,22 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
     th.stack_limit = kstack_base as *mut u8;
     th.next = ptr::null_mut();
     th.prev = ptr::null_mut();
-    unsafe {
-        th.cspace.grant_all();
+
+    let mmap = unsafe { &*core::ptr::addr_of!(MEMORY_MAP) };
+    for i in 0..mmap.region_count {
+        let r = &mmap.regions[i];
+        if r.type_ == MemoryType::Available {
+            let base = r.start;
+            let size = r.end - r.start + 1;
+            th.cspace
+                .insert(None, Cap::new(CapType::Untyped, base, size, CAP_ALL));
+            verbose!(
+                "create_root: untyped {:#x}..{:#x} ({} KB)",
+                base,
+                r.end,
+                size / 1024
+            );
+        }
     }
 
     verbose!(
