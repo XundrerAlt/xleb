@@ -2,10 +2,10 @@
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 use crate::arch::boot::bootinfo;
 use crate::arch::cpu;
-use crate::logger::{info, verbose};
 use crate::cap::CNode;
+use crate::logger::{info, verbose};
 use core::ptr;
-use xleb_api::{ThreadInfo, ThreadState};
+use xleb_api::{BOOTINFO_ADDR, ThreadInfo, ThreadState};
 
 use crate::{PHYS_TO_VIRT, VIRT_TO_PHYS};
 
@@ -13,7 +13,6 @@ pub(crate) mod switch;
 
 pub const USER_STACK_ADDR: u32 = 0x4000_0000;
 pub const USER_CODE_ADDR: u32 = 0x4100_0000;
-pub const BOOTINFO_ADDR: u32 = 0x4000_1000;
 pub const STACK_SIZE: usize = 4096;
 
 const USER_CS: u32 = 0x1B;
@@ -137,7 +136,7 @@ unsafe fn build_user_iret_frame(kstack_top: u32, user_eip: u32, user_esp: u32) -
         sp = sp.sub(1);
         *sp = user_esp;
         sp = sp.sub(1);
-        *sp = 0x202;
+        *sp = 0x3202; // SECURITY TODO: any threads can break any ports. fix it
         sp = sp.sub(1);
         *sp = USER_CS;
         sp = sp.sub(1);
@@ -170,7 +169,7 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
     let pd_ptr = pd.0.as_mut_ptr();
     let code_pt_ptr = code_pt.0.as_mut_ptr();
     let stack_pt_ptr = stack_pt.0.as_mut_ptr();
-    let bootinfo_pt_ptr = stack_pt.0.as_mut_ptr();
+    let bootinfo_pt_ptr = bootinfo_pt.0.as_mut_ptr();
 
     verbose!(
         "create_root: ROOT_PD={:#x} ROOT_CODE_PT={:#x} ROOT_STACK_PT={:#x}",
@@ -183,6 +182,7 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
         ptr::write_bytes(pd.0.as_mut_ptr(), 0, 1024);
         ptr::write_bytes(code_pt.0.as_mut_ptr(), 0, 1024);
         ptr::write_bytes(stack_pt.0.as_mut_ptr(), 0, 1024);
+        ptr::write_bytes(bootinfo_pt.0.as_mut_ptr(), 0, 1024);
         ptr::write_bytes(kernel_pt.0.as_mut_ptr(), 0, 1024);
     }
     verbose!("create_root: PD/PT zeroed");
@@ -252,7 +252,7 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
             bootinfo_pt_ptr,
             BOOTINFO_ADDR,
             bootinfo::phys_addr(),
-            PAGE_PRESENT | PAGE_WRITE | PAGE_USER,
+            PAGE_PRESENT | PAGE_USER,
         );
     }
 
@@ -284,7 +284,9 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
     th.stack_limit = kstack_base as *mut u8;
     th.next = ptr::null_mut();
     th.prev = ptr::null_mut();
-    unsafe { th.cspace.grant_all(); }
+    unsafe {
+        th.cspace.grant_all();
+    }
 
     verbose!(
         "create_root: th.pd_addr={:#x} th.esp={:#x} th.stack_limit={:#x}",

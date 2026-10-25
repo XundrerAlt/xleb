@@ -15,7 +15,9 @@ const WILDCARD: u32 = u32::MAX; // TODO: delete it
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CapType {
-    None, CNode, Untyped,
+    None,
+    CNode,
+    Untyped,
 }
 
 #[derive(Debug)]
@@ -33,7 +35,11 @@ impl Cap {
     };
 
     pub const fn new(type_: CapType, object: u32, rights: u32) -> Self {
-        Self { type_, object, rights }
+        Self {
+            type_,
+            object,
+            rights,
+        }
     }
 
     pub fn is_none(&self) -> bool {
@@ -46,8 +52,8 @@ impl Cap {
 
     pub fn check(&self, type_: CapType, object: u32, rights: u32) -> bool {
         self.type_ == type_
-        && (self.object == object || self.object == WILDCARD)
-        && self.has(rights)
+            && (self.object == object || self.object == WILDCARD)
+            && self.has(rights)
     }
 }
 
@@ -78,7 +84,9 @@ impl CNode {
     }
 
     pub fn check(&self, type_: CapType, object: u32, rights: u32) -> Option<&Cap> {
-        self.slots.iter().find(|cap| cap.check(type_, object, rights))
+        self.slots
+            .iter()
+            .find(|cap| cap.check(type_, object, rights))
     }
 
     pub fn insert(&mut self, idx: Option<usize>, cap: Cap) -> Option<usize> {
@@ -92,8 +100,7 @@ impl CNode {
 
     pub unsafe fn grant_all(&mut self) {
         let self_addr = self as *mut CNode as u32;
-        verbose!("CNode::grant_all: begin (self_addr={:#x})",
-                 self_addr);
+        verbose!("CNode::grant_all: begin (self_addr={:#x})", self_addr);
         // TODO: remove wildcards
         self.insert(Some(0), Cap::new(CapType::Untyped, u32::MAX, CAP_ALL));
         self.insert(Some(1), Cap::new(CapType::CNode, self_addr, CAP_ALL));

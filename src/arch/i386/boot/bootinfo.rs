@@ -5,7 +5,10 @@ use crate::arch::boot::mmap::MEMORY_MAP;
 use crate::arch::boot::modules;
 use crate::arch::boot::multiboot1::mmap;
 use crate::logger::verbose;
-use xleb_api::{MAX_MEMORY_REGIONS,MAX_MODULES,BOOTINFO_MAGIC,BootInfo,MemoryMapInfo,ModuleInfo,ModuleEntry,KernelInfo};
+use xleb_api::{
+    BOOTINFO_MAGIC, BootInfo, KernelInfo, MAX_MEMORY_REGIONS, MAX_MODULES, MemoryMapInfo,
+    ModuleEntry, ModuleInfo,
+};
 
 unsafe extern "C" {
     static _kernel_start: u8;

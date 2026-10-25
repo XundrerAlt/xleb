@@ -3,7 +3,7 @@
 
 pub const BOOTINFO_MAGIC: u32 = 0x4245_4C58;
 pub const BOOTINFO_VERSION: u32 = 1;
-pub const BOOTINFO_ADDR: u32 = 0x4000_1000;
+pub const BOOTINFO_ADDR: u32 = 0x3000_0000;
 pub const MAX_MEMORY_REGIONS: usize = 64;
 pub const MAX_MODULES: usize = 8;
 
