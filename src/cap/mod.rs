@@ -21,8 +21,6 @@ pub struct Cap {
 }
 
 impl Cap {
-    pub const WILDCARD: usize = usize::MAX; // TODO: remove wildcard
-
     pub const NONE: Cap = Cap {
         type_: CapType::None,
         object: 0,
@@ -47,9 +45,18 @@ impl Cap {
     }
 
     pub fn check(&self, type_: CapType, object: usize, rights: u32) -> bool {
-        self.type_ == type_
-            && (self.object == object || self.object == Self::WILDCARD)
-            && self.has(rights)
+        if self.type_ != type_ || !self.has(rights) {
+            return false;
+        }
+        if self.object == object {
+            return true;
+        }
+        if self.type_ == CapType::Untyped
+            && object >= self.object
+            && object < self.object + self.size {
+            return true;
+        }
+        false
     }
 }
 
@@ -74,6 +81,14 @@ impl CNode {
     pub fn get(&self, idx: usize) -> Option<&Cap> {
         if idx < MAX_CAPS && !self.slots[idx].is_none() {
             Some(&self.slots[idx])
+        } else {
+            None
+        }
+    }
+
+    pub fn get_mut(&mut self, idx: usize) -> Option<&mut Cap> {
+        if idx < MAX_CAPS && !self.slots[idx].is_none() {
+            Some(&mut self.slots[idx])
         } else {
             None
         }

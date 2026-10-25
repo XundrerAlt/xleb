@@ -5,6 +5,7 @@
 pub enum SyscallNum {
     Test = 0,
     CapFind = 1,
+    CapRetype = 2,
 }
 
 impl TryFrom<u32> for SyscallNum {
@@ -13,6 +14,7 @@ impl TryFrom<u32> for SyscallNum {
         match nr {
             0 => Ok(SyscallNum::Test),
             1 => Ok(SyscallNum::CapFind),
+            2 => Ok(SyscallNum::CapRetype),
             _ => Err(()),
         }
     }
@@ -22,7 +24,9 @@ impl TryFrom<u32> for SyscallNum {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SyscallErrno {
     SUCCESS = 0,
+    EPERM = -1,
     ENOENT = -2,
+    ENOMEM = -12,
     EFAULT = -14,
     EINVAL = -22,
     ENOSYS = -38,
