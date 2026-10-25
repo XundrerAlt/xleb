@@ -6,7 +6,7 @@ pub enum SyscallNum {
     Test = 0,
     CapFind = 1,
     CapRetype = 2,
-    CapMap = 3,
+    FrameMap = 3,
 }
 
 impl TryFrom<u32> for SyscallNum {
@@ -16,7 +16,7 @@ impl TryFrom<u32> for SyscallNum {
             0 => Ok(SyscallNum::Test),
             1 => Ok(SyscallNum::CapFind),
             2 => Ok(SyscallNum::CapRetype),
-            3 => Ok(SyscallNum::CapMap),
+            3 => Ok(SyscallNum::FrameMap),
             _ => Err(()),
         }
     }

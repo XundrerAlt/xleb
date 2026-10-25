@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 pub(crate) mod temp_window;
-
 pub(crate) const PAGE_PRESENT: u32 = 1 << 0;
 pub(crate) const PAGE_WRITE: u32 = 1 << 1;
 pub(crate) const PAGE_USER: u32 = 1 << 2;
