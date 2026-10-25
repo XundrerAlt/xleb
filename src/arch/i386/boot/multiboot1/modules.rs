@@ -2,8 +2,8 @@
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 use super::header;
 use crate::logger::{info, warning};
+use xleb_api::MAX_MODULES;
 
-const MAX_MODULES: usize = 8;
 pub static mut MODULES: [(u32, u32); MAX_MODULES] = [(0, 0); MAX_MODULES];
 pub static mut MODULE_COUNT: usize = 0;
 

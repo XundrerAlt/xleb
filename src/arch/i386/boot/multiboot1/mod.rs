@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 mod cmdline;
 mod header;
-mod mmap;
+pub(crate) mod mmap;
 pub(crate) mod modules;
 mod section;
 

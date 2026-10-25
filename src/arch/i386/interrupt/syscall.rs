@@ -44,9 +44,7 @@ pub unsafe extern "C" fn syscall_handler(frame: *mut SyscallFrame) {
             debug!("SYSCALL!");
             0
         }
-        _ => {
-            -38
-        }
+        _ => -38,
     };
     f.eax = ret as u32;
 }

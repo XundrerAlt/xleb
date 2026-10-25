@@ -4,8 +4,7 @@ use super::header;
 use super::modules;
 use crate::logger::{debug, verbose, warning};
 use crate::{PHYS_TO_VIRT, VIRT_TO_PHYS};
-
-pub const MAX_MEMORY_REGIONS: usize = 64;
+use xleb_api::MAX_MEMORY_REGIONS;
 
 unsafe extern "C" {
     static _kernel_end: u8;

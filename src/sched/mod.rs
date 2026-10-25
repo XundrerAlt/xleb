@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 
+use crate::VIRT_TO_PHYS;
 use crate::arch::boot::modules;
 use crate::arch::thread::{self, Thread};
-use crate::logger::{debug,info,verbose};
+use crate::logger::{debug, info, verbose};
 use core::sync::atomic::{AtomicPtr, Ordering};
 use xleb_api::ThreadState;
-use crate::VIRT_TO_PHYS;
 
 mod queue;
 use queue::ThreadQueue;
@@ -64,7 +64,10 @@ pub(crate) unsafe fn yield_now() {
         n
     };
     if next != current {
-        unsafe { set_current(next); thread::switch::do_(next); }
+        unsafe {
+            set_current(next);
+            thread::switch::do_(next);
+        }
     } else if !current.is_null() {
         unsafe { (*current).state = ThreadState::Running };
     }

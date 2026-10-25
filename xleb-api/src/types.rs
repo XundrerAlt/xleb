@@ -25,3 +25,15 @@ const _: () = {
     assert!(core::mem::size_of::<ThreadState>() == 4);
     assert!(core::mem::align_of::<ThreadState>() == 4);
 };
+
+#[derive(Clone, Copy)]
+pub enum CapType {
+    Thread, Page, Endpoint, Irq, Device, CNode,
+}
+
+#[derive(Clone, Copy)]
+pub struct Cap {
+    pub type_: CapType,
+    pub object: u32,
+    pub rights: u32,
+}

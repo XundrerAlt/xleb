@@ -7,6 +7,7 @@
 #![cfg_attr(xleb_tests, reexport_test_harness_main = "test_main")]
 
 mod arch;
+mod cap;
 mod logger;
 mod sched;
 

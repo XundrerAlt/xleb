@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
+use crate::arch::boot::bootinfo;
 use crate::arch::cpu;
 use crate::logger::{info, verbose};
 use core::ptr;
@@ -11,6 +12,7 @@ pub(crate) mod switch;
 
 pub const USER_STACK_ADDR: u32 = 0x4000_0000;
 pub const USER_CODE_ADDR: u32 = 0x4100_0000;
+pub const BOOTINFO_ADDR: u32 = 0x4000_1000;
 pub const STACK_SIZE: usize = 4096;
 
 const USER_CS: u32 = 0x1B;
@@ -63,6 +65,7 @@ static mut ROOT_PD: PageDir = PageDir([0; 1024]);
 static mut ROOT_CODE_PT: PageTable = PageTable([0; 1024]);
 static mut ROOT_STACK_PT: PageTable = PageTable([0; 1024]);
 static mut ROOT_KERNEL_PT: PageTable = PageTable([0; 1024]);
+static mut ROOT_BOOTINFO_PT: PageTable = PageTable([0; 1024]);
 
 #[repr(C, align(16))]
 struct RootKStack([u8; STACK_SIZE]);
@@ -159,10 +162,12 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
     let code_pt = unsafe { &mut *ptr::addr_of_mut!(ROOT_CODE_PT) };
     let stack_pt = unsafe { &mut *ptr::addr_of_mut!(ROOT_STACK_PT) };
     let kernel_pt = unsafe { &mut *ptr::addr_of_mut!(ROOT_KERNEL_PT) };
+    let bootinfo_pt = unsafe { &mut *ptr::addr_of_mut!(ROOT_BOOTINFO_PT) };
 
     let pd_ptr = pd.0.as_mut_ptr();
     let code_pt_ptr = code_pt.0.as_mut_ptr();
     let stack_pt_ptr = stack_pt.0.as_mut_ptr();
+    let bootinfo_pt_ptr = stack_pt.0.as_mut_ptr();
 
     verbose!(
         "create_root: ROOT_PD={:#x} ROOT_CODE_PT={:#x} ROOT_STACK_PT={:#x}",
@@ -224,6 +229,25 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
             stack_pt_ptr,
             USER_STACK_ADDR,
             ustack_phys,
+            PAGE_PRESENT | PAGE_WRITE | PAGE_USER,
+        );
+    }
+
+    unsafe {
+        bootinfo::fill();
+    }
+    verbose!(
+        "create_root: mapping bootinfo: bootinfo={:#x} bootinfo_phys={:#x} -> BOOTINFO_ADDR={:#x}",
+        bootinfo::virt_addr(),
+        bootinfo::phys_addr(),
+        BOOTINFO_ADDR,
+    );
+    unsafe {
+        map_page_in(
+            pd_ptr,
+            bootinfo_pt_ptr,
+            BOOTINFO_ADDR,
+            bootinfo::phys_addr(),
             PAGE_PRESENT | PAGE_WRITE | PAGE_USER,
         );
     }
