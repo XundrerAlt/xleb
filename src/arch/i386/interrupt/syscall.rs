@@ -56,6 +56,10 @@ fn sys_cap_find(frame: &mut SyscallFrame) -> i32 {
     }
 }
 
+fn align_up(x: usize, a: usize) -> usize {
+    (x + a - 1) & !(a - 1)
+}
+
 fn sys_cap_retype(frame: &mut SyscallFrame) -> i32 {
     let untyped_idx = frame.ebx as usize;
     let type_ = frame.ecx;
@@ -77,6 +81,12 @@ fn sys_cap_retype(frame: &mut SyscallFrame) -> i32 {
         }
     };
 
+    let align = size.max(4096);
+    if !align.is_power_of_two() {
+        verbose!("sys_cap_retype: size={} not a power of two", size);
+        return EINVAL.into();
+    }
+
     let current = CURRENT_THREAD.load(Ordering::Acquire);
     if current.is_null() {
         return EPERM.into();
@@ -93,24 +103,18 @@ fn sys_cap_retype(frame: &mut SyscallFrame) -> i32 {
         }
     };
 
-    if size == 0 || size > untyped.size {
+    let obj = align_up(untyped.object, align);
+    let consumed = obj + size - untyped.object;
+    if consumed > untyped.size {
         verbose!(
-            "sys_cap_retype: size={} > untyped.size={}",
-            size,
-            untyped.size
+            "sys_cap_retype: no room (need {} bytes after align, have {})",
+                 consumed,
+                 untyped.size
         );
-        return EINVAL.into();
+        return ENOMEM.into();
     }
 
-    let cap_type = match CapType::try_from(type_) {
-        Ok(t) if t != CapType::None => t,
-        _ => {
-            verbose!("sys_cap_retype: invalid type_={}", type_);
-            return EINVAL.into();
-        }
-    };
-
-    let new_cap = Cap::new(cap_type, untyped.object, size, untyped.rights);
+    let new_cap = Cap::new(cap_type, obj, size, untyped.rights);
     let new_idx = match cspace.insert(None, new_cap) {
         Some(idx) => idx,
         None => {
@@ -120,16 +124,25 @@ fn sys_cap_retype(frame: &mut SyscallFrame) -> i32 {
     };
 
     if let Some(untyped_mut) = cspace.get_mut(untyped_idx) {
-        untyped_mut.size -= size;
-        untyped_mut.object += size;
+        untyped_mut.object += consumed;
+        untyped_mut.size   -= consumed;
+    }
+
+    if matches!(cap_type, CapType::Page | CapType::VNode) {
+        unsafe {
+            let mut win = TempWindow::map(obj as u32, 4096);
+            core::ptr::write_bytes(win.as_mut_ptr(), 0, 4096);
+        }
     }
 
     verbose!(
-        "sys_cap_retype: untyped[{}] -> {:?} idx={} size={}",
-        untyped_idx,
-        cap_type,
-        new_idx,
-        size
+        "sys_cap_retype: untyped[{}] -> {:?} idx={} obj={:#x} size={} (consumed={})",
+             untyped_idx,
+             cap_type,
+             new_idx,
+             obj,
+             size,
+             consumed
     );
 
     new_idx as i32

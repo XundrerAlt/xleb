@@ -15,7 +15,7 @@ pub(crate) mod switch;
 pub const USER_STACK_ADDR: u32 = 0x4000_0000;
 pub const USER_CODE_ADDR: u32 = 0x4100_0000;
 pub const VSPACE_ADDR: u32 = 0xD000_0000;
-pub const STACK_SIZE: usize = 4096;
+pub const STACK_SIZE: usize = 0x4000;
 
 const USER_CS: u32 = 0x1B;
 const USER_DS: u32 = 0x23;
@@ -202,7 +202,7 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
             USER_CODE_ADDR,
             code_phys,
             prog_size,
-            PAGE_PRESENT | PAGE_USER,
+            PAGE_PRESENT | PAGE_WRITE | PAGE_USER,
         );
     }
 
@@ -214,11 +214,12 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
         USER_STACK_ADDR,
     );
     unsafe {
-        map_page_in(
+        map_region(
             pd_ptr,
             stack_pt_ptr,
             USER_STACK_ADDR,
             ustack_phys,
+            STACK_SIZE,
             PAGE_PRESENT | PAGE_WRITE | PAGE_USER,
         );
     }
