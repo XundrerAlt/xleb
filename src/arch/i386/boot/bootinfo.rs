@@ -99,10 +99,10 @@ pub unsafe fn fill() -> u32 {
 }
 
 pub fn virt_addr() -> u32 {
-    unsafe { core::ptr::addr_of!(BUF) as u32 }
+    core::ptr::addr_of!(BUF) as u32
 }
 
 pub fn phys_addr() -> u32 {
-    let base = unsafe { core::ptr::addr_of!(BUF) as u32 };
+    let base = core::ptr::addr_of!(BUF) as u32;
     crate::VIRT_TO_PHYS!(base)
 }

@@ -3,6 +3,7 @@
 use crate::arch::boot::bootinfo;
 use crate::arch::cpu;
 use crate::logger::{info, verbose};
+use crate::cap::CNode;
 use core::ptr;
 use xleb_api::{ThreadInfo, ThreadState};
 
@@ -23,7 +24,7 @@ const PAGE_WRITE: u32 = 1 << 1;
 const PAGE_USER: u32 = 1 << 2;
 
 #[repr(C)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 pub struct ThreadContext {
     pub edi: u32,
     pub esi: u32,
@@ -44,7 +45,7 @@ const _: () = {
 };
 
 #[repr(C)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 pub struct Thread {
     pub info: ThreadInfo,
     pub tid: u32,
@@ -55,6 +56,7 @@ pub struct Thread {
     pub stack_limit: *mut u8,
     pub next: *mut Thread,
     pub prev: *mut Thread,
+    pub cspace: CNode,
 }
 
 #[repr(C, align(4096))]
@@ -89,6 +91,7 @@ static mut ROOT_THREAD: Thread = Thread {
     stack_limit: core::ptr::null_mut(),
     next: core::ptr::null_mut(),
     prev: core::ptr::null_mut(),
+    cspace: CNode::new(),
 };
 
 static mut ROOT_CTX: ThreadContext = ThreadContext {
@@ -236,6 +239,7 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
     unsafe {
         bootinfo::fill();
     }
+
     verbose!(
         "create_root: mapping bootinfo: bootinfo={:#x} bootinfo_phys={:#x} -> BOOTINFO_ADDR={:#x}",
         bootinfo::virt_addr(),
@@ -280,6 +284,7 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
     th.stack_limit = kstack_base as *mut u8;
     th.next = ptr::null_mut();
     th.prev = ptr::null_mut();
+    unsafe { th.cspace.grant_all(); }
 
     verbose!(
         "create_root: th.pd_addr={:#x} th.esp={:#x} th.stack_limit={:#x}",
