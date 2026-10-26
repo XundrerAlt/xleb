@@ -44,20 +44,22 @@ impl Cap {
         (self.rights & rights) == rights
     }
 
-    pub fn check(&self, type_: CapType, object: usize, rights: u32) -> bool {
+    pub fn check(&self, type_: CapType, object: usize, size: usize, rights: u32) -> bool {
         if self.type_ != type_ || !self.has(rights) {
             return false;
         }
-        if self.object == object {
-            return true;
-        }
-        if self.type_ == CapType::Untyped
-            && object >= self.object
-            && object < self.object + self.size
+        if object != 0
+            && self.object != object
+            && !(self.type_ == CapType::Untyped
+                && object >= self.object
+                && object < self.object + self.size)
         {
-            return true;
+            return false;
         }
-        false
+        if size != 0 && size > self.size {
+            return false;
+        }
+        true
     }
 }
 
@@ -95,10 +97,10 @@ impl CNode {
         }
     }
 
-    pub fn check(&self, type_: CapType, object: usize, rights: u32) -> Option<&Cap> {
+    pub fn check(&self, type_: CapType, object: usize, size: usize, rights: u32) -> Option<&Cap> {
         self.slots
             .iter()
-            .find(|cap| cap.check(type_, object, rights))
+            .find(|cap| cap.check(type_, object, size, rights))
     }
 
     pub fn insert(&mut self, idx: Option<usize>, cap: Cap) -> Option<usize> {
@@ -110,9 +112,19 @@ impl CNode {
         Some(i)
     }
 
-    pub fn find(&self, type_: CapType, object: usize, rights: u32) -> Option<usize> {
+    pub fn find(&self, type_: CapType, object: usize, size: usize, rights: u32) -> Option<usize> {
+        verbose!(
+            "CNode::find: {:?} object={:#x} size={:#x} rights={:#x}",
+            match CapType::try_from(type_) {
+                Ok(t) => t,
+                 Err(_) => CapType::None,
+            },
+            object,
+            size,
+            rights
+        );
         self.slots
             .iter()
-            .position(|cap| cap.check(type_, object, rights))
+            .position(|cap| cap.check(type_, object, size, rights))
     }
 }

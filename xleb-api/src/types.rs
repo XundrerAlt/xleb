@@ -32,8 +32,9 @@ pub enum CapType {
     CNode = 1,
     Untyped = 2,
     Frame = 3,
-    VNode = 4,
+    PageTable = 4,
     Thread = 5,
+    PageSpace = 6,
 }
 
 impl TryFrom<u32> for CapType {
@@ -44,8 +45,9 @@ impl TryFrom<u32> for CapType {
             1 => Ok(CapType::CNode),
             2 => Ok(CapType::Untyped),
             3 => Ok(CapType::Frame),
-            4 => Ok(CapType::VNode),
+            4 => Ok(CapType::PageTable),
             5 => Ok(CapType::Thread),
+            6 => Ok(CapType::PageSpace),
             _ => Err(()),
         }
     }

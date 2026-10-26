@@ -14,8 +14,8 @@ pub(crate) mod switch;
 
 pub const USER_STACK_ADDR: u32 = 0x4000_0000;
 pub const USER_CODE_ADDR: u32 = 0x4100_0000;
-pub const VSPACE_ADDR: u32 = 0xD000_0000;
-pub const STACK_SIZE: usize = 0x4000;
+pub const PAGE_SPACE_ADDR: u32 = 0xD000_0000;
+pub const STACK_SIZE: usize = 0x8000;
 
 const USER_CS: u32 = 0x1B;
 const USER_DS: u32 = 0x23;
@@ -47,7 +47,7 @@ pub struct Thread {
     pub info: ThreadInfo,
     pub tid: u32,
     pub state: ThreadState,
-    pub vspace: u32,
+    pub pagespace: u32,
     pub esp: *mut u32,
     pub context: *mut ThreadContext,
     pub stack_limit: *mut u8,
@@ -61,7 +61,7 @@ static mut ROOT_CODE_PT: PageTable = PageTable([0; 1024]);
 static mut ROOT_STACK_PT: PageTable = PageTable([0; 1024]);
 static mut ROOT_KERNEL_PT: PageTable = PageTable([0; 1024]);
 static mut ROOT_BOOTINFO_PT: PageTable = PageTable([0; 1024]);
-static mut ROOT_VSPACE_PT: PageTable = PageTable([0; 1024]);
+static mut ROOT_PAGE_SPACE_PT: PageTable = PageTable([0; 1024]);
 
 #[repr(C, align(16))]
 struct RootKStack([u8; STACK_SIZE]);
@@ -79,7 +79,7 @@ static mut ROOT_THREAD: Thread = Thread {
     },
     tid: 0,
     state: ThreadState::Ready,
-    vspace: 0,
+    pagespace: 0,
     esp: core::ptr::null_mut(),
     context: core::ptr::null_mut(),
     stack_limit: core::ptr::null_mut(),
@@ -130,6 +130,36 @@ unsafe fn build_user_iret_frame(kstack_top: u32, user_eip: u32, user_esp: u32) -
     }
 }
 
+pub(crate) unsafe fn init_thread(
+    th: *mut Thread,
+    tid: u32,
+    entry: u32,
+    user_esp: u32,
+    pagespace_phys: u32,
+    kstack: u32,
+) -> u32 {
+    let kstack_base = kstack as *mut u8;
+    let kstack_top = ((kstack as usize + kstack_size as usize) & !0xF) as u32;
+    let frame_esp = unsafe { build_user_iret_frame(kstack_top, entry, user_esp) };
+    unsafe {
+        (*th).info = ThreadInfo {
+            stack_top: kstack_top,
+            stack_size: STACK_SIZE as u32,
+            entry,
+        };
+        (*th).tid = tid;
+        (*th).state = ThreadState::Ready;
+        (*th).pagespace = pagespace_phys;
+        (*th).esp = frame_esp as *mut u32;
+        (*th).context = core::ptr::null_mut();
+        (*th).stack_limit = kstack_base;
+        (*th).next = core::ptr::null_mut();
+        (*th).prev = core::ptr::null_mut();
+        (*th).cspace = CNode::new();
+    }
+    frame_esp
+}
+
 pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static mut Thread {
     if prog_phys == 0 || prog_size == 0 {
         panic!("create_root: invalid program");
@@ -142,7 +172,6 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
     );
 
     let th = unsafe { &mut *ptr::addr_of_mut!(ROOT_THREAD) };
-    let kstack = unsafe { &mut *ptr::addr_of_mut!(ROOT_KSTACK) };
     let ustack = unsafe { &mut *ptr::addr_of_mut!(ROOT_USTACK) };
     let ctx = unsafe { &mut *ptr::addr_of_mut!(ROOT_CTX) };
     let pd = unsafe { &mut *ptr::addr_of_mut!(ROOT_PD) };
@@ -150,19 +179,18 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
     let stack_pt = unsafe { &mut *ptr::addr_of_mut!(ROOT_STACK_PT) };
     let kernel_pt = unsafe { &mut *ptr::addr_of_mut!(ROOT_KERNEL_PT) };
     let bootinfo_pt = unsafe { &mut *ptr::addr_of_mut!(ROOT_BOOTINFO_PT) };
-    let vspace_pt = unsafe { &mut *ptr::addr_of_mut!(ROOT_VSPACE_PT) };
+    let pagespace_pt = unsafe { &mut *ptr::addr_of_mut!(ROOT_PAGE_SPACE_PT) };
 
     let pd_ptr = pd.0.as_mut_ptr();
     let code_pt_ptr = code_pt.0.as_mut_ptr();
     let stack_pt_ptr = stack_pt.0.as_mut_ptr();
     let bootinfo_pt_ptr = bootinfo_pt.0.as_mut_ptr();
-    let vspace_pt_ptr = vspace_pt.0.as_mut_ptr();
+    let pagespace_pt_ptr = pagespace_pt.0.as_mut_ptr();
 
     verbose!(
-        "create_root: ROOT_PD={:#x} ROOT_CODE_PT={:#x} ROOT_STACK_PT={:#x}",
+        "create_root: ROOT_PD={:#x} ROOT_CODE_PT={:#x}",
         pd_ptr as u32,
-        code_pt_ptr as u32,
-        stack_pt_ptr as u32,
+        code_pt_ptr as u32
     );
 
     unsafe {
@@ -182,25 +210,18 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
             *pd_ptr.add(i) = *old_pd.add(i);
         }
     }
-    verbose!(
-        "create_root: PD[768]={:#x} PD[1023]={:#x} (copied)",
-        unsafe { *pd_ptr.add(768) },
-        unsafe { *pd_ptr.add(1023) },
-    );
 
-    let code_phys = prog_phys;
     verbose!(
-        "create_root: mapping user code: code_phys={:#x} pages={} -> USER_CODE_ADDR={:#x}",
-        code_phys,
-        (prog_size + 0xFFF) / 0x1000,
-        USER_CODE_ADDR,
+        "create_root: mapping user code: code_phys={:#x} -> USER_CODE_ADDR={:#x}",
+        prog_phys,
+        USER_CODE_ADDR
     );
     unsafe {
         map_region(
             pd_ptr,
             code_pt_ptr,
             USER_CODE_ADDR,
-            code_phys,
+            prog_phys,
             prog_size,
             PAGE_PRESENT | PAGE_WRITE | PAGE_USER,
         );
@@ -208,10 +229,9 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
 
     let ustack_phys = VIRT_TO_PHYS!(ustack.0.as_mut_ptr() as u32);
     verbose!(
-        "create_root: mapping user stack: ustack={:#x} ustack_phys={:#x} -> USER_STACK_ADDR={:#x}",
-        ustack.0.as_mut_ptr() as u32,
+        "create_root: mapping user stack: ustack_phys={:#x} -> USER_STACK_ADDR={:#x}",
         ustack_phys,
-        USER_STACK_ADDR,
+        USER_STACK_ADDR
     );
     unsafe {
         map_region(
@@ -227,12 +247,10 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
     unsafe {
         bootinfo::fill();
     }
-
     verbose!(
-        "create_root: mapping bootinfo: bootinfo={:#x} bootinfo_phys={:#x} -> BOOTINFO_ADDR={:#x}",
-        bootinfo::virt_addr(),
+        "create_root: mapping bootinfo: phys={:#x} -> BOOTINFO_ADDR={:#x}",
         bootinfo::phys_addr(),
-        BOOTINFO_ADDR,
+        BOOTINFO_ADDR
     );
     unsafe {
         map_page_in(
@@ -245,48 +263,37 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
     }
 
     verbose!(
-        "create_root: mapping thread's vspace: vspace={:#x} -> VSPACE_ADDR={:#x}",
+        "create_root: mapping pagespace: {:#x} -> PAGE_SPACE_ADDR={:#x}",
         VIRT_TO_PHYS!(pd_ptr as u32),
-        VSPACE_ADDR,
+        PAGE_SPACE_ADDR
     );
     unsafe {
         map_page_in(
             pd_ptr,
-            vspace_pt_ptr,
-            VSPACE_ADDR,
+            pagespace_pt_ptr,
+            PAGE_SPACE_ADDR,
             VIRT_TO_PHYS!(pd_ptr as u32),
             PAGE_PRESENT | PAGE_WRITE,
         );
     }
 
-    let kstack_base = kstack.0.as_mut_ptr() as u32;
-    let kstack_top = (kstack_base + STACK_SIZE as u32) & !0xF;
     let user_esp = USER_STACK_ADDR + STACK_SIZE as u32;
-    let frame_esp = unsafe { build_user_iret_frame(kstack_top, USER_CODE_ADDR, user_esp) };
-    verbose!(
-        "create_root: kstack_base={:#x} kstack_top={:#x} user_esp={:#x} frame_esp={:#x}",
-        kstack_base,
-        kstack_top,
-        user_esp,
-        frame_esp,
+    let pagespace_phys = VIRT_TO_PHYS!(pd_ptr as u32);
+
+    unsafe {
+        init_thread(
+            th as *mut Thread,
+            0,
+            USER_CODE_ADDR,
+            user_esp,
+            pagespace_phys,
+        );
+    }
+
+    th.cspace.insert(
+        None,
+        Cap::new(CapType::PageSpace, pd_ptr as usize, 0, CAP_ALL),
     );
-
-    ctx.eip = USER_CODE_ADDR;
-    ctx.eflags = 0x202;
-
-    th.info = ThreadInfo {
-        stack_top: kstack_top,
-        stack_size: STACK_SIZE as u32,
-        entry: USER_CODE_ADDR,
-    };
-    th.tid = 0;
-    th.state = ThreadState::Ready;
-    th.vspace = VIRT_TO_PHYS!(pd_ptr as u32);
-    th.esp = frame_esp as *mut u32;
-    th.context = ctx as *mut ThreadContext;
-    th.stack_limit = kstack_base as *mut u8;
-    th.next = ptr::null_mut();
-    th.prev = ptr::null_mut();
 
     let mmap = unsafe { &*core::ptr::addr_of!(MEMORY_MAP) };
     for i in 0..mmap.region_count {
@@ -305,12 +312,20 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
         }
     }
 
+    ctx.eip = USER_CODE_ADDR;
+    ctx.eflags = 0x202;
+    th.context = ctx as *mut ThreadContext;
+
     verbose!(
-        "create_root: th.vspace={:#x} th.esp={:#x} th.stack_limit={:#x}",
-        th.vspace,
-        th.esp as u32,
-        th.stack_limit as u32,
+        "create_root: user_esp={:#x}",
+        user_esp
     );
+    verbose!(
+        "create_root: th.pagespace={:#x} th.esp={:#x}",
+        th.pagespace,
+        th.esp as u32
+    );
+
     info!("Root thread initialized");
     th
 }

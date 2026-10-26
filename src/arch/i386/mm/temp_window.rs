@@ -3,7 +3,7 @@
 use crate::PHYS_TO_VIRT;
 use crate::arch::cpu;
 use crate::arch::mm::{PAGE_PRESENT, PAGE_USER, PAGE_WRITE, PageDir, PageTable, map_page_in};
-use crate::arch::thread::VSPACE_ADDR;
+use crate::arch::thread::PAGE_SPACE_ADDR;
 use core::ops::{Deref, DerefMut};
 use core::sync::atomic::{AtomicUsize, Ordering};
 
@@ -67,7 +67,7 @@ pub unsafe fn map(phys: u32) -> u32 {
 
     let virt = TEMP_WINDOW_BASE + (slot as u32) * TEMP_WINDOW_SIZE as u32;
 
-    let pd_virt = VSPACE_ADDR as *mut u32;
+    let pd_virt = PAGE_SPACE_ADDR as *mut u32;
     let temp_pt = unsafe { core::ptr::addr_of_mut!(TEMP_PT.0) as *mut u32 };
 
     unsafe {
