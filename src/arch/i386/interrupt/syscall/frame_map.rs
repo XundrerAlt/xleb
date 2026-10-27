@@ -3,7 +3,7 @@
 
 use crate::arch::cpu;
 use crate::arch::mm::temp_window::TempWindow;
-use crate::arch::mm::{PAGE_PRESENT, PAGE_USER, PAGE_WRITE};
+use crate::arch::mm::{PAGE_PRESENT, PAGE_USER, PAGE_WRITE, PAGE_MASK};
 use crate::arch::thread::PAGE_SPACE_ADDR;
 use crate::cap::{CAP_READ, CAP_WRITE, CNode, Cap, current_cspace, get_cap};
 use crate::logger::verbose;
@@ -12,10 +12,7 @@ use core::sync::atomic::Ordering;
 use xleb_api::CapType;
 use xleb_api::SyscallErrno::*;
 
-use super::{MAX_FRAME_SIZE, SyscallFrame};
-
-const PAGE_SIZE: usize = 4096;
-const PAGE_MASK: u32 = 0xFFF;
+use super::{MAX_FRAME_SIZE, SyscallFrame, PAGE_SIZE};
 const PT_ENTRIES: usize = 1024;
 
 fn validate_frame_map(pt: &Cap, frame: &Cap, vaddr: u32) -> Result<(usize, usize, usize), i32> {
@@ -27,15 +24,15 @@ fn validate_frame_map(pt: &Cap, frame: &Cap, vaddr: u32) -> Result<(usize, usize
         verbose!("sys_frame_map: frame size={} invalid", frame.size);
         return Err(EINVAL.into());
     }
-    if vaddr & PAGE_MASK != 0 {
+    if vaddr & PAGE_MASK as u32 != 0 {
         verbose!("sys_frame_map: vaddr={:#x} not page-aligned", vaddr);
         return Err(EINVAL.into());
     }
-    if pt.object & PAGE_MASK as usize != 0 {
+    if pt.object & PAGE_MASK != 0 {
         verbose!("sys_frame_map: pt_obj={:#x} not page-aligned", pt.object);
         return Err(EINVAL.into());
     }
-    if frame.object & PAGE_MASK as usize != 0 {
+    if frame.object & PAGE_MASK != 0 {
         verbose!("sys_frame_map: frame={:#x} not page-aligned", frame.object);
         return Err(EINVAL.into());
     }

@@ -167,3 +167,12 @@ pub(crate) fn current_cspace() -> Result<&'static CNode, i32> {
     }
     Ok(unsafe { &(*p).cspace })
 }
+
+pub(crate) unsafe fn commit_untyped(cspace: &CNode, idx: usize, consumed: usize) {
+    unsafe {
+        if let Some(u) = cspace.get_mut(idx) {
+            u.object += consumed;
+            u.size -= consumed;
+        }
+    }
+}

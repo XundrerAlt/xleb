@@ -10,6 +10,7 @@ mod arch;
 mod cap;
 mod logger;
 mod sched;
+mod utils;
 
 #[allow(unused)]
 mod tests;

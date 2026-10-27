@@ -2,15 +2,15 @@
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 
 use crate::arch::mm::temp_window::TempWindow;
+use crate::arch::mm::PAGE_SIZE;
 use crate::arch::thread::Thread;
-use crate::cap::{CAP_WRITE, CNode, Cap, current_cspace, get_cap};
+use crate::cap::{CAP_WRITE, CNode, Cap, current_cspace, get_cap, commit_untyped};
 use crate::logger::{verbose, warning};
 use xleb_api::CapType;
 use xleb_api::SyscallErrno::*;
+use crate::utils::align_up;
 
 use super::{MAX_FRAME_SIZE, SyscallFrame};
-
-const PAGE_SIZE: usize = 4096;
 
 fn alloc_in_untyped(untyped: &Cap, size: usize, align: usize) -> Result<(usize, usize), i32> {
     let obj = align_up(untyped.object, align);
@@ -80,24 +80,11 @@ fn insert_cap(
     })
 }
 
-unsafe fn commit_untyped(cspace: &CNode, idx: usize, consumed: usize) {
-    unsafe {
-        if let Some(u) = cspace.get_mut(idx) {
-            u.object += consumed;
-            u.size -= consumed;
-        }
-    }
-}
-
 unsafe fn zero_object(obj: usize, len: usize) {
     unsafe {
         let mut win = TempWindow::map(obj as u32, len);
         core::ptr::write_bytes(win.as_mut_ptr(), 0, len);
     }
-}
-
-fn align_up(x: usize, a: usize) -> usize {
-    (x + a - 1) & !(a - 1)
 }
 
 pub(crate) fn sys(frame: &mut SyscallFrame) -> i32 {

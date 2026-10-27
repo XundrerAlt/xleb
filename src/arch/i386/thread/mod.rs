@@ -5,16 +5,19 @@ use crate::arch::boot::mmap::{MEMORY_MAP, MemoryType};
 use crate::arch::cpu;
 use crate::arch::mm::{
     PAGE_PRESENT, PAGE_USER, PAGE_WRITE, PageDir, PageTable, map_page_in, map_region,
+    PAGE_MASK, PAGE_SIZE, PD_SHIFT, PT_SHIFT, PT_MASK
 };
 use crate::cap::{CAP_ALL, CNode, Cap};
 use crate::logger::{info, verbose};
 use crate::{PHYS_TO_VIRT, VIRT_TO_PHYS};
 use core::ptr;
 use xleb_api::{BOOTINFO_ADDR, CapType, ThreadInfo, ThreadState};
+use crate::arch::mm::temp_window::TempWindow;
 
 pub(crate) mod switch;
 
 pub const USER_STACK_ADDR: u32 = 0x4000_0000;
+pub const KERNEL_STACK_ADDR: u32 = 0xC008_0000;
 pub const USER_CODE_ADDR: u32 = 0x4100_0000;
 pub const PAGE_SPACE_ADDR: u32 = 0xD000_0000;
 pub const STACK_SIZE: usize = 0x8000;
@@ -117,31 +120,51 @@ unsafe fn build_user_iret_frame(kstack_top: u32, user_eip: u32, user_esp: u32) -
 }
 
 pub(crate) unsafe fn init_thread(
-    th: *mut Thread,
+    th_phys: u32,
     tid: u32,
     entry: u32,
     user_esp: u32,
     pagespace_phys: u32,
     kstack: u32,
 ) -> u32 {
-    let kstack_base = kstack as *mut u8;
     let kstack_top = ((kstack as usize + STACK_SIZE) & !0xF) as u32;
+    verbose!(
+        "init_thread: th_phys={:#x} tid={} entry={:#x} user_esp={:#x} space={:#x} kstack={:#x}..{:#x}",
+        th_phys,
+        tid,
+        entry,
+        user_esp,
+        pagespace_phys,
+        kstack,
+        kstack_top
+    );
     let frame_esp = unsafe { build_user_iret_frame(kstack_top, entry, user_esp) };
+    verbose!(
+        "init_thread: IRET frame at {:#x} (kstack_top={:#x}, size={})",
+             frame_esp,
+             kstack_top,
+             kstack_top - frame_esp
+    );
     unsafe {
-        (*th).info = ThreadInfo {
-            stack_top: kstack_top,
-            stack_size: STACK_SIZE as u32,
-            entry,
-        };
+        let mut win = TempWindow::map(th_phys, PAGE_SIZE);
+        let th = win.as_mut_ptr() as *mut Thread;
+        (*th).info = ThreadInfo { stack_top: kstack_top, stack_size: STACK_SIZE as u32, entry };
         (*th).tid = tid;
         (*th).state = ThreadState::Ready;
         (*th).pagespace = pagespace_phys;
         (*th).esp = frame_esp as *mut u32;
         (*th).context = core::ptr::null_mut();
-        (*th).stack_limit = kstack_base;
+        (*th).stack_limit = kstack as *mut u8;
         (*th).next = core::ptr::null_mut();
         (*th).prev = core::ptr::null_mut();
         (*th).cspace = CNode::new();
+
+        verbose!(
+            "init_thread: th.esp={:#x} th.stack_limit={:#x} th.state={:?}",
+            (*th).esp as u32,
+                 (*th).stack_limit as u32,
+                 (*th).state
+        );
     }
     frame_esp
 }
@@ -212,6 +235,22 @@ unsafe fn map_user_stack(pd_ptr: *mut u32, stack_pt_ptr: *mut u32, ustack_phys: 
             STACK_SIZE,
             PAGE_PRESENT | PAGE_WRITE | PAGE_USER,
         );
+    }
+}
+
+unsafe fn map_kernel_stack(pd_ptr: *mut u32, pt_ptr: *mut u32, kstack_phys: u32, kstack_vaddr: u32) {
+    let pages = STACK_SIZE / PAGE_SIZE;
+    verbose!("...");
+    unsafe {
+        map_region(pd_ptr, pt_ptr, kstack_vaddr, kstack_phys, STACK_SIZE, PAGE_PRESENT | PAGE_WRITE);
+        let pd_idx = (kstack_vaddr >> PD_SHIFT) as usize;
+        let pde = *pd_ptr.add(pd_idx);
+        verbose!("PDE[{}] = {:#x} (present={}, pt={:#x})", pd_idx, pde, pde & PAGE_PRESENT != 0, pde & !(PAGE_MASK as u32));
+        for i in 0..pages {
+            let pt_idx = (((kstack_vaddr >> PT_SHIFT) & PT_MASK) as usize) + i;
+            let pte = *pt_ptr.add(pt_idx);
+            verbose!("PTE[{}] = {:#x} (present={}, phys={:#x})", pt_idx, pte, pte & PAGE_PRESENT != 0, pte & !(PAGE_MASK as u32));
+        }
     }
 }
 
@@ -307,6 +346,7 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
     let stack_pt_ptr = stack_pt.0.as_mut_ptr();
     let bootinfo_pt_ptr = bootinfo_pt.0.as_mut_ptr();
     let pagespace_pt_ptr = pagespace_pt.0.as_mut_ptr();
+    let kernel_pt_ptr = kernel_pt.0.as_mut_ptr();
 
     verbose!(
         "create_root: ROOT_PD={:#x} ROOT_CODE_PT={:#x}",
@@ -329,15 +369,15 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
 
     let pagespace_phys = VIRT_TO_PHYS!(pd_ptr as u32);
     let user_esp = USER_STACK_ADDR + STACK_SIZE as u32;
-    let kstack_base = kstack.0.as_mut_ptr() as u32;
     unsafe {
+        cpu::write_cr3(pagespace_phys);
         init_thread(
-            th as *mut Thread,
+            VIRT_TO_PHYS!(th as *mut Thread as usize) as u32,
             0,
             USER_CODE_ADDR,
             user_esp,
             pagespace_phys,
-            kstack_base,
+            kstack.0.as_mut_ptr() as u32,
         );
     }
     ctx.eip = USER_CODE_ADDR;

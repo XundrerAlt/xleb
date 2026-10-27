@@ -3,13 +3,14 @@
 use crate::logger::verbose;
 use xleb_api::SyscallErrno::*;
 use xleb_api::SyscallNum::{self, *};
+use crate::arch::mm::PAGE_SIZE;
 
 mod cap_find;
 mod cap_retype;
 mod frame_map;
 mod thread_conf;
 
-pub(crate) const MAX_FRAME_SIZE: usize = 1024 * 4096;
+pub(crate) const MAX_FRAME_SIZE: usize = 1024 * PAGE_SIZE;
 
 #[repr(C)]
 pub struct SyscallFrame {
