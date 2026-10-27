@@ -117,7 +117,7 @@ impl CNode {
             "CNode::find: {:?} object={:#x} size={:#x} rights={:#x}",
             match CapType::try_from(type_) {
                 Ok(t) => t,
-                 Err(_) => CapType::None,
+                Err(_) => CapType::None,
             },
             object,
             size,

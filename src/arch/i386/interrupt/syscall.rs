@@ -3,7 +3,7 @@
 use crate::arch::cpu;
 use crate::arch::mm::temp_window::TempWindow;
 use crate::arch::mm::{PAGE_PRESENT, PAGE_USER, PAGE_WRITE};
-use crate::arch::thread::{Thread, PAGE_SPACE_ADDR, init_thread};
+use crate::arch::thread::{PAGE_SPACE_ADDR, Thread, init_thread};
 use crate::cap::{CAP_ALL, CAP_READ, CAP_WRITE, Cap};
 use crate::logger::{verbose, warning};
 use crate::sched::CURRENT_THREAD;
@@ -60,7 +60,7 @@ fn sys_cap_find(frame: &mut SyscallFrame) -> i32 {
         None => {
             verbose!("sys_cap_find: no cap found");
             ENOENT.into()
-        },
+        }
     }
 }
 
@@ -316,20 +316,30 @@ fn sys_thread_conf(frame: &mut SyscallFrame) -> i32 {
     let th = match cspace.get(thread_idx) {
         Some(cap) if cap.type_ == CapType::Thread && cap.has(CAP_WRITE) => *cap,
         _ => {
-            verbose!("sys_thread_conf: thread_idx={} isn't Thread/CAP_WRITE", thread_idx);
+            verbose!(
+                "sys_thread_conf: thread_idx={} isn't Thread/CAP_WRITE",
+                thread_idx
+            );
             return EINVAL.into();
         }
     };
-    if th.object == 0 { return EINVAL.into(); }
+    if th.object == 0 {
+        return EINVAL.into();
+    }
 
     let pagespace = match cspace.get(pagespace_idx) {
         Some(cap) if cap.type_ == CapType::PageSpace && cap.has(CAP_WRITE) => *cap,
         _ => {
-            verbose!("sys_thread_conf: pagespace_idx={} isn't PageSpace/CAP_WRITE", pagespace_idx);
+            verbose!(
+                "sys_thread_conf: pagespace_idx={} isn't PageSpace/CAP_WRITE",
+                pagespace_idx
+            );
             return EINVAL.into();
         }
     };
-    if pagespace.object == 0 || pagespace.object == th.object { return EINVAL.into(); }
+    if pagespace.object == 0 || pagespace.object == th.object {
+        return EINVAL.into();
+    }
 
     if code_vaddr & 0xFFF != 0 || ustack_vaddr & 0xFFF != 0 {
         return EINVAL.into();
@@ -347,8 +357,14 @@ fn sys_thread_conf(frame: &mut SyscallFrame) -> i32 {
         );
     }
 
-    verbose!("sys_thread_conf: th={:#x} space={:#x} entry={:#x} ustack={:#x} tid={}",
-             th.object, pagespace.object, code_vaddr, ustack_vaddr, tid);
+    verbose!(
+        "sys_thread_conf: th={:#x} space={:#x} entry={:#x} ustack={:#x} tid={}",
+        th.object,
+        pagespace.object,
+        code_vaddr,
+        ustack_vaddr,
+        tid
+    );
     SUCCESS.into()
 }
 
