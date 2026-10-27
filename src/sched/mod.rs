@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 
-use crate::VIRT_TO_PHYS;
 use crate::arch::boot::modules;
 use crate::arch::thread::{self, Thread};
-use crate::logger::{debug, info, verbose};
+use crate::logger::{debug, info};
 use core::sync::atomic::{AtomicPtr, Ordering};
 use xleb_api::ThreadState;
 

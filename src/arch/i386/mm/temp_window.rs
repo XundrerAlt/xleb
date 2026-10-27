@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
-use crate::PHYS_TO_VIRT;
 use crate::arch::cpu;
-use crate::arch::mm::{PAGE_PRESENT, PAGE_USER, PAGE_WRITE, PageDir, PageTable, map_page_in};
+use crate::arch::mm::{PAGE_PRESENT, PAGE_WRITE, PageTable, map_page_in};
 use crate::arch::thread::PAGE_SPACE_ADDR;
 use core::ops::{Deref, DerefMut};
 use core::sync::atomic::{AtomicUsize, Ordering};

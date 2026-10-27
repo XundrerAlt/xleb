@@ -102,7 +102,7 @@ pub(crate) unsafe fn process(mbi: &header::multiboot_info_t) {
             p += entry.size as usize + 4;
             continue;
         }
-        let mut region = MemoryRegion {
+        let _region = MemoryRegion {
             start,
             end,
             size,

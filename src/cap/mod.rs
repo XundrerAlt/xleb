@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 use crate::logger::verbose;
+use crate::sched::CURRENT_THREAD;
+use core::cell::UnsafeCell;
+use core::sync::atomic::Ordering;
 use xleb_api::CapType;
+use xleb_api::SyscallErrno::{EINVAL, EPERM};
 
 pub const MAX_CAPS: usize = 64;
 
@@ -61,70 +65,105 @@ impl Cap {
         }
         true
     }
+
+    pub fn check_tr(&self, ty: CapType, rights: u32) -> bool {
+        self.type_ == ty && self.has(rights)
+    }
 }
 
 #[derive(Debug)]
 pub struct CNode {
-    pub slots: [Cap; MAX_CAPS],
-    pub parent: *mut CNode,
+    slots: UnsafeCell<[Cap; MAX_CAPS]>,
+    parent: UnsafeCell<*mut CNode>,
 }
 
+unsafe impl Sync for CNode {}
 impl CNode {
     pub const fn new() -> Self {
         Self {
-            slots: [Cap::NONE; MAX_CAPS],
-            parent: core::ptr::null_mut(),
+            slots: UnsafeCell::new([Cap::NONE; MAX_CAPS]),
+            parent: UnsafeCell::new(core::ptr::null_mut()),
         }
     }
 
     pub fn find_free(&self) -> Option<usize> {
-        (0..MAX_CAPS).find(|&i| self.slots[i].is_none())
+        let slots = unsafe { &*self.slots.get() };
+        (0..MAX_CAPS).find(|&i| slots[i].is_none())
     }
 
     pub fn get(&self, idx: usize) -> Option<&Cap> {
-        if idx < MAX_CAPS && !self.slots[idx].is_none() {
-            Some(&self.slots[idx])
+        let slots = unsafe { &*self.slots.get() };
+        if idx < MAX_CAPS && !slots[idx].is_none() {
+            Some(&slots[idx])
         } else {
             None
         }
     }
 
-    pub fn get_mut(&mut self, idx: usize) -> Option<&mut Cap> {
-        if idx < MAX_CAPS && !self.slots[idx].is_none() {
-            Some(&mut self.slots[idx])
+    pub unsafe fn get_mut(&self, idx: usize) -> Option<&mut Cap> {
+        let slots = unsafe { &mut *self.slots.get() };
+        if idx < MAX_CAPS && !slots[idx].is_none() {
+            Some(&mut slots[idx])
         } else {
             None
         }
     }
 
     pub fn check(&self, type_: CapType, object: usize, size: usize, rights: u32) -> Option<&Cap> {
-        self.slots
+        let slots = unsafe { &*self.slots.get() };
+        slots
             .iter()
             .find(|cap| cap.check(type_, object, size, rights))
     }
 
-    pub fn insert(&mut self, idx: Option<usize>, cap: Cap) -> Option<usize> {
+    pub unsafe fn insert(&self, idx: Option<usize>, cap: Cap) -> Option<usize> {
+        let slots = unsafe { &mut *self.slots.get() };
         let i = match idx {
             Some(i) if i < MAX_CAPS => i,
-            _ => self.find_free()?,
+            _ => (0..MAX_CAPS).find(|&i| slots[i].is_none())?,
         };
-        self.slots[i] = cap;
+        slots[i] = cap;
         Some(i)
     }
 
     pub fn find(&self, type_: CapType, object: usize, size: usize, rights: u32) -> Option<usize> {
-        verbose!(
-            "CNode::find: {:?} object={:#x} size={:#x} rights={:#x}",
-            match CapType::try_from(type_) {
-                Ok(t) => t,
-                Err(_) => CapType::None,
-            },
-            object,
-            size,
-            rights
-        );
-        self.slots
+        let slots = unsafe { &*self.slots.get() };
+        slots
             .iter()
             .position(|cap| cap.check(type_, object, size, rights))
     }
+
+    pub fn parent(&self) -> *mut CNode {
+        unsafe { *self.parent.get() }
+    }
+
+    pub unsafe fn set_parent(&self, p: *mut CNode) {
+        unsafe {
+            *self.parent.get() = p;
+        }
+    }
+}
+
+pub(crate) fn get_cap(
+    cspace: &CNode,
+    idx: usize,
+    ty: CapType,
+    rights: u32,
+    ctx: &str,
+) -> Result<Cap, i32> {
+    match cspace.get(idx) {
+        Some(c) if c.check_tr(ty, rights) => Ok(*c),
+        _ => {
+            verbose!("{}: idx={} isn't {:?}/rights={:#x}", ctx, idx, ty, rights);
+            Err(EINVAL.into())
+        }
+    }
+}
+
+pub(crate) fn current_cspace() -> Result<&'static CNode, i32> {
+    let p = CURRENT_THREAD.load(Ordering::Acquire);
+    if p.is_null() {
+        return Err(EPERM.into());
+    }
+    Ok(unsafe { &(*p).cspace })
 }

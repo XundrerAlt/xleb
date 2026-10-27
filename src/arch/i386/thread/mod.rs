@@ -3,7 +3,9 @@
 use crate::arch::boot::bootinfo;
 use crate::arch::boot::mmap::{MEMORY_MAP, MemoryType};
 use crate::arch::cpu;
-use crate::arch::mm::{PAGE_PRESENT, PAGE_USER, PAGE_WRITE, PageDir, PageTable, map_page_in};
+use crate::arch::mm::{
+    PAGE_PRESENT, PAGE_USER, PAGE_WRITE, PageDir, PageTable, map_page_in, map_region,
+};
 use crate::cap::{CAP_ALL, CNode, Cap};
 use crate::logger::{info, verbose};
 use crate::{PHYS_TO_VIRT, VIRT_TO_PHYS};
@@ -96,22 +98,6 @@ static mut ROOT_CTX: ThreadContext = ThreadContext {
     eflags: 0x202,
     eip: 0,
 };
-
-unsafe fn map_region(
-    pd: *mut u32,
-    pt: *mut u32,
-    dst_va: u32,
-    src_phys: u32,
-    len: usize,
-    flags: u32,
-) {
-    let pages = (len + 0xFFF) / 0x1000;
-    for i in 0..pages {
-        let phys = src_phys + (i as u32) * 0x1000;
-        let va = dst_va + (i as u32) * 0x1000;
-        unsafe { map_page_in(pd, pt, va, phys, flags) };
-    }
-}
 
 unsafe fn build_user_iret_frame(kstack_top: u32, user_eip: u32, user_esp: u32) -> u32 {
     unsafe {
@@ -267,10 +253,12 @@ unsafe fn map_pagespace(pd_ptr: *mut u32, pagespace_pt_ptr: *mut u32) {
 }
 
 unsafe fn install_pagespace_cap(th: &mut Thread, pd_ptr: *mut u32) {
-    th.cspace.insert(
-        None,
-        Cap::new(CapType::PageSpace, pd_ptr as usize, 0, CAP_ALL),
-    );
+    unsafe {
+        th.cspace.insert(
+            None,
+            Cap::new(CapType::PageSpace, pd_ptr as usize, 0, CAP_ALL),
+        );
+    }
 }
 
 unsafe fn install_untyped_caps(th: &mut Thread) {
@@ -280,8 +268,10 @@ unsafe fn install_untyped_caps(th: &mut Thread) {
         if r.type_ == MemoryType::Available {
             let base = r.start;
             let size = r.end - r.start + 1;
-            th.cspace
-                .insert(None, Cap::new(CapType::Untyped, base, size, CAP_ALL));
+            unsafe {
+                th.cspace
+                    .insert(None, Cap::new(CapType::Untyped, base, size, CAP_ALL));
+            }
             verbose!(
                 "create_root: untyped {:#x}..{:#x} ({} KB)",
                 base,

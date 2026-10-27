@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 use crate::arch::cpu::outb;
 use crate::arch::interrupt;
-use crate::logger::{debug, verbose};
+use crate::logger::debug;
 use crate::sched;
 use core::sync::atomic::{AtomicU32, Ordering};
 
