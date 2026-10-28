@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 
+use crate::PHYS_TO_VIRT;
 use crate::arch::cpu;
-use crate::arch::mm::{PAGE_PRESENT, PAGE_USER, PAGE_WRITE, PAGE_MASK};
+use crate::arch::mm::{PAGE_MASK, PAGE_PRESENT, PAGE_USER, PAGE_WRITE};
 use crate::cap::{CAP_READ, CAP_WRITE, CNode, Cap, current_cspace, get_cap};
 use crate::logger::verbose;
 use crate::sched::CURRENT_THREAD;
-use crate::PHYS_TO_VIRT;
 use core::sync::atomic::Ordering;
 use xleb_api::CapType;
 use xleb_api::SyscallErrno::*;
 
-use super::{MAX_FRAME_SIZE, SyscallFrame, PAGE_SIZE};
+use super::{MAX_FRAME_SIZE, PAGE_SIZE, SyscallFrame};
 const PT_ENTRIES: usize = 1024;
 
 fn validate_frame_map(pt: &Cap, frame: &Cap, vaddr: u32) -> Result<(usize, usize, usize), i32> {

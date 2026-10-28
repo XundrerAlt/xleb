@@ -28,8 +28,15 @@ const KERNEL_DS: u32 = 0x10;
 
 pub unsafe fn do_(new: *mut Thread) -> ! {
     let pd = unsafe { (*new).pagespace };
-    let ctx = unsafe { (*new).context };
+    let ctx = unsafe { &mut (*new).context as *mut ThreadContext };
     let esp = unsafe { (*new).esp } as u32;
+    crate::logger::verbose!(
+        "switch::do_: new={:#x} pd={:#x} ctx={:#x} esp={:#x}",
+        new as u32,
+        pd,
+        ctx as u32,
+        esp
+    );
     tss::set_stack(unsafe { (*new).info.stack_top });
     unsafe { switch_to(pd, ctx, esp) }
 }

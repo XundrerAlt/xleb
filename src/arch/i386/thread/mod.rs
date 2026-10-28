@@ -4,8 +4,8 @@ use crate::arch::boot::bootinfo;
 use crate::arch::boot::mmap::{MEMORY_MAP, MemoryType};
 use crate::arch::cpu;
 use crate::arch::mm::{
-    PAGE_PRESENT, PAGE_USER, PAGE_WRITE, PageDir, PageTable, map_page_in, map_region,
-    PAGE_MASK, PAGE_SIZE, PD_SHIFT, PT_SHIFT, PT_MASK
+    PAGE_MASK, PAGE_PRESENT, PAGE_SIZE, PAGE_USER, PAGE_WRITE, PD_SHIFT, PT_MASK, PT_SHIFT,
+    PageDir, PageTable, map_page_in, map_region,
 };
 use crate::cap::{CAP_ALL, CNode, Cap};
 use crate::logger::{info, verbose};
@@ -52,7 +52,7 @@ pub struct Thread {
     pub state: ThreadState,
     pub pagespace: u32,
     pub esp: *mut u32,
-    pub context: *mut ThreadContext,
+    pub context: ThreadContext,
     pub stack_limit: *mut u8,
     pub next: *mut Thread,
     pub prev: *mut Thread,
@@ -73,25 +73,27 @@ struct RootUStack([u8; STACK_SIZE]);
 static mut ROOT_USTACK: RootUStack = RootUStack([0; STACK_SIZE]);
 
 static mut ROOT_THREAD: Thread = Thread {
-    info: ThreadInfo { stack_top: 0, stack_size: 0, entry: 0 },
+    info: ThreadInfo {
+        stack_top: 0,
+        stack_size: 0,
+        entry: 0,
+    },
     tid: 0,
     state: ThreadState::Ready,
     pagespace: 0,
     esp: core::ptr::null_mut(),
-    context: core::ptr::null_mut(),
+    context: ThreadContext {
+        eip: 0,
+        eflags: 0x202,
+        edi: 0,
+        esi: 0,
+        ebx: 0,
+        ebp: 0,
+    },
     stack_limit: core::ptr::null_mut(),
     next: core::ptr::null_mut(),
     prev: core::ptr::null_mut(),
     cspace: CNode::new(),
-};
-
-static mut ROOT_CTX: ThreadContext = ThreadContext {
-    edi: 0,
-    esi: 0,
-    ebx: 0,
-    ebp: 0,
-    eflags: 0x202,
-    eip: 0,
 };
 
 unsafe fn build_user_iret_frame(kstack_top: u32, user_eip: u32, user_esp: u32) -> u32 {
@@ -133,18 +135,29 @@ pub(crate) unsafe fn init_thread(
     let frame_esp = unsafe { build_user_iret_frame(kstack_top, entry, user_esp) };
     verbose!(
         "init_thread: IRET frame at {:#x} (kstack_top={:#x}, size={})",
-             frame_esp,
-             kstack_top,
-             kstack_top - frame_esp
+        frame_esp,
+        kstack_top,
+        kstack_top - frame_esp
     );
     unsafe {
         let th = PHYS_TO_VIRT!(th_phys) as *mut Thread;
-        (*th).info = ThreadInfo { stack_top: kstack_top, stack_size: STACK_SIZE as u32, entry };
+        (*th).info = ThreadInfo {
+            stack_top: kstack_top,
+            stack_size: STACK_SIZE as u32,
+            entry,
+        };
         (*th).tid = tid;
         (*th).state = ThreadState::Ready;
         (*th).pagespace = pagespace_phys;
         (*th).esp = frame_esp as *mut u32;
-        (*th).context = core::ptr::null_mut();
+        (*th).context = ThreadContext {
+            eip: entry,
+            eflags: 0x202,
+            edi: 0,
+            esi: 0,
+            ebx: 0,
+            ebp: 0,
+        };
         (*th).stack_limit = kstack as *mut u8;
         (*th).next = core::ptr::null_mut();
         (*th).prev = core::ptr::null_mut();
@@ -153,8 +166,8 @@ pub(crate) unsafe fn init_thread(
         verbose!(
             "init_thread: th.esp={:#x} th.stack_limit={:#x} th.state={:?}",
             (*th).esp as u32,
-                 (*th).stack_limit as u32,
-                 (*th).state
+            (*th).stack_limit as u32,
+            (*th).state
         );
     }
     frame_esp
@@ -180,7 +193,7 @@ unsafe fn zero_root_tables(
     }
 }
 
-unsafe fn copy_kernel_pd(pd_ptr: *mut u32) {
+pub(crate) unsafe fn copy_kernel_pd(pd_ptr: *mut u32) {
     let old_cr3 = unsafe { cpu::read_cr3() };
     let old_pd = PHYS_TO_VIRT!(old_cr3) as *const u32;
     verbose!("create_root: old_cr3={:#x}, copying PD[512..1024]", old_cr3);
@@ -289,7 +302,6 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
     let th = unsafe { &mut *ptr::addr_of_mut!(ROOT_THREAD) };
     let ustack = unsafe { &mut *ptr::addr_of_mut!(ROOT_USTACK) };
     let kstack = unsafe { &mut *ptr::addr_of_mut!(ROOT_KSTACK) };
-    let ctx = unsafe { &mut *ptr::addr_of_mut!(ROOT_CTX) };
     let pd = unsafe { &mut *ptr::addr_of_mut!(ROOT_PD) };
     let code_pt = unsafe { &mut *ptr::addr_of_mut!(ROOT_CODE_PT) };
     let stack_pt = unsafe { &mut *ptr::addr_of_mut!(ROOT_STACK_PT) };
@@ -330,9 +342,6 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
             kstack.0.as_mut_ptr() as u32,
         );
     }
-    ctx.eip = USER_CODE_ADDR;
-    ctx.eflags = 0x202;
-    th.context = ctx as *mut ThreadContext;
 
     unsafe {
         install_pagespace_cap(th, pagespace_phys);

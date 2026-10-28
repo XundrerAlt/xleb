@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 
-use crate::logger::verbose;
-use xleb_api::SyscallErrno::*;
-use crate::utils::align_up;
 use crate::cap::Cap;
+use crate::logger::verbose;
+use crate::utils::align_up;
+use xleb_api::SyscallErrno::*;
 
 pub(crate) const PAGE_PRESENT: u32 = 1 << 0;
 pub(crate) const PAGE_WRITE: u32 = 1 << 1;
@@ -22,6 +22,9 @@ pub(crate) struct PageTable(pub(crate) [u32; 1024]);
 #[repr(C, align(4096))]
 pub(crate) struct PageDir(pub(crate) [u32; 1024]);
 
+// TODO: direct map covers [0, 2 GiB) (kernel-half starts at 0x80000000).
+// RAM above 2 GiB is unsupported until we implement highmem/PAE or move the
+// kernel-half boundary.
 #[macro_export]
 macro_rules! VIRT_TO_PHYS {
     ($addr:expr) => {{
@@ -64,15 +67,17 @@ pub(crate) unsafe fn map_region(
     }
 }
 
-pub(crate) unsafe fn alloc_pt_from_untyped(
-    untyped: &mut Cap,
-    ctx: &str,
-) -> Result<u32, i32> {
+pub(crate) unsafe fn alloc_pt_from_untyped(untyped: &mut Cap, ctx: &str) -> Result<u32, i32> {
     let align = PAGE_SIZE;
     let obj = align_up(untyped.object, align);
     let consumed = obj + PAGE_SIZE - untyped.object;
     if consumed > untyped.size {
-        verbose!("{}: untyped too small for PT (need {}, have {})", ctx, consumed, untyped.size);
+        verbose!(
+            "{}: untyped too small for PT (need {}, have {})",
+            ctx,
+            consumed,
+            untyped.size
+        );
         return Err(ENOMEM.into());
     }
     let pt_phys = obj as u32;
@@ -82,7 +87,12 @@ pub(crate) unsafe fn alloc_pt_from_untyped(
         let pt_va = PHYS_TO_VIRT!(pt_phys) as *mut u8;
         core::ptr::write_bytes(pt_va, 0, PAGE_SIZE);
     }
-    verbose!("{}: allocated PT at {:#x} (consumed={})", ctx, pt_phys, consumed);
+    verbose!(
+        "{}: allocated PT at {:#x} (consumed={})",
+        ctx,
+        pt_phys,
+        consumed
+    );
     Ok(pt_phys)
 }
 
@@ -96,7 +106,12 @@ pub(crate) unsafe fn map_range_in_pagespace(
     ctx: &str,
 ) -> Result<(), i32> {
     if vaddr & PAGE_MASK as u32 != 0 || paddr & PAGE_MASK as u32 != 0 {
-        verbose!("{}: vaddr={:#x} or paddr={:#x} not page-aligned", ctx, vaddr, paddr);
+        verbose!(
+            "{}: vaddr={:#x} or paddr={:#x} not page-aligned",
+            ctx,
+            vaddr,
+            paddr
+        );
         return Err(EINVAL.into());
     }
     let pages = size / PAGE_SIZE;
@@ -126,7 +141,12 @@ pub(crate) unsafe fn map_range_in_pagespace(
         let pt = PHYS_TO_VIRT!(pt_phys) as *mut u32;
         let pt_index = ((vaddr >> PT_SHIFT) & PT_MASK) as usize;
         if pt_index + pages > PT_ENTRIES {
-            verbose!("{}: {} pages at pt_index={} cross PT boundary", ctx, pages, pt_index);
+            verbose!(
+                "{}: {} pages at pt_index={} cross PT boundary",
+                ctx,
+                pages,
+                pt_index
+            );
             return Err(ENOMEM.into());
         }
         for i in 0..pages {
@@ -135,8 +155,13 @@ pub(crate) unsafe fn map_range_in_pagespace(
             if pte & PAGE_PRESENT != 0 {
                 let cur_phys = pte & !PAGE_MASK as u32;
                 if cur_phys != pa {
-                    verbose!("{}: page {:#x} already mapped to {:#x}, expected {:#x}",
-                             ctx, vaddr + (i as u32) * PAGE_SIZE as u32, cur_phys, pa);
+                    verbose!(
+                        "{}: page {:#x} already mapped to {:#x}, expected {:#x}",
+                        ctx,
+                        vaddr + (i as u32) * PAGE_SIZE as u32,
+                        cur_phys,
+                        pa
+                    );
                     return Err(EINVAL.into());
                 }
             } else {

@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
+use crate::arch::mm::PAGE_SIZE;
 use crate::logger::verbose;
 use xleb_api::SyscallErrno::*;
 use xleb_api::SyscallNum::{self, *};
-use crate::arch::mm::PAGE_SIZE;
 
 mod cap_find;
 mod cap_retype;
 mod frame_map;
 mod thread_conf;
+mod thread_start;
 
 pub(crate) const MAX_FRAME_SIZE: usize = 1024 * PAGE_SIZE;
 
@@ -49,6 +50,7 @@ pub unsafe extern "C" fn syscall_handler(frame: &mut SyscallFrame) {
         Ok(CapRetype) => cap_retype::sys(f),
         Ok(FrameMap) => frame_map::sys(f),
         Ok(ThreadConf) => thread_conf::sys(f),
+        Ok(ThreadStart) => thread_start::sys(f),
         _ => {
             verbose!("Unknown syscall");
             ENOSYS.into()

@@ -65,7 +65,9 @@ pub unsafe fn read_cr3() -> u32 {
 
 #[inline(always)]
 pub unsafe fn write_cr3(val: u32) {
-    unsafe { asm!("mov cr3, {}", in(reg) val, options(nostack, preserves_flags)); }
+    unsafe {
+        asm!("mov cr3, {}", in(reg) val, options(nostack, preserves_flags));
+    }
 }
 
 #[inline]

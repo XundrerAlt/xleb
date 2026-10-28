@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 
-use crate::arch::mm::PAGE_SIZE;
-use crate::arch::thread::Thread;
-use crate::cap::{CAP_WRITE, CNode, Cap, current_cspace, get_cap, commit_untyped};
-use crate::logger::{verbose, warning};
 use crate::PHYS_TO_VIRT;
+use crate::arch::mm::PAGE_SIZE;
+use crate::arch::thread::{Thread, copy_kernel_pd};
+use crate::cap::{CAP_WRITE, CNode, Cap, commit_untyped, current_cspace, get_cap};
+use crate::logger::{verbose, warning};
+use crate::utils::align_up;
 use xleb_api::CapType;
 use xleb_api::SyscallErrno::*;
-use crate::utils::align_up;
 
 use super::{MAX_FRAME_SIZE, SyscallFrame};
 
@@ -18,8 +18,8 @@ fn alloc_in_untyped(untyped: &Cap, size: usize, align: usize) -> Result<(usize, 
     if consumed > untyped.size {
         verbose!(
             "sys_cap_retype: no room (need {} bytes after align, have {})",
-                 consumed,
-                 untyped.size
+            consumed,
+            untyped.size
         );
         return Err(ENOMEM.into());
     }
@@ -116,15 +116,21 @@ fn sys_impl(frame: &mut SyscallFrame) -> Result<i32, i32> {
     if matches!(cap_type, CapType::Frame | CapType::PageTable) {
         unsafe { zero_object(obj, PAGE_SIZE) };
     }
+    if cap_type == CapType::PageSpace {
+        unsafe {
+            zero_object(obj, PAGE_SIZE);
+            copy_kernel_pd(PHYS_TO_VIRT!(obj as u32) as *mut u32);
+        }
+    }
 
     verbose!(
         "sys_cap_retype: untyped[{}] -> {:?} idx={} obj={:#x} size={} (consumed={})",
-             untyped_idx,
-             cap_type,
-             new_idx,
-             obj,
-             size,
-             consumed
+        untyped_idx,
+        cap_type,
+        new_idx,
+        obj,
+        size,
+        consumed
     );
     Ok(new_idx as i32)
 }

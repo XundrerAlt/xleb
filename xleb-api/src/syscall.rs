@@ -8,6 +8,7 @@ pub enum SyscallNum {
     CapRetype = 2,
     FrameMap = 3,
     ThreadConf = 4,
+    ThreadStart = 5,
 }
 
 impl TryFrom<u32> for SyscallNum {
@@ -19,6 +20,7 @@ impl TryFrom<u32> for SyscallNum {
             2 => Ok(SyscallNum::CapRetype),
             3 => Ok(SyscallNum::FrameMap),
             4 => Ok(SyscallNum::ThreadConf),
+            5 => Ok(SyscallNum::ThreadStart),
             _ => Err(()),
         }
     }
