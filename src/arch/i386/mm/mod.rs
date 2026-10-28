@@ -29,7 +29,7 @@ pub(crate) struct PageDir(pub(crate) [u32; 1024]);
 macro_rules! VIRT_TO_PHYS {
     ($addr:expr) => {{
         let a = ($addr) as u32;
-        if a >= 0xC000_0000 { a - 0xC000_0000 } else { a }
+        if a >= 0x8000_0000 { a - 0x8000_0000 } else { a }
     }};
 }
 
@@ -37,7 +37,7 @@ macro_rules! VIRT_TO_PHYS {
 macro_rules! PHYS_TO_VIRT {
     ($addr:expr) => {{
         let a = ($addr) as u32;
-        if a < 0xC000_0000 { a + 0xC000_0000 } else { a }
+        if a < 0x8000_0000 { a + 0x8000_0000 } else { a }
     }};
 }
 
