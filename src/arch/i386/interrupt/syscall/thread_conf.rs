@@ -2,19 +2,14 @@
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 use crate::arch::thread::{Thread, init_thread, KERNEL_STACK_ADDR, USER_STACK_ADDR};
 use crate::arch::mm::{map_range_in_pagespace, PAGE_SIZE, PAGE_MASK, PAGE_WRITE, PAGE_USER, PAGE_PRESENT};
-use crate::arch::mm::temp_window::TempWindow;
 use crate::cap::{CAP_GRANT, CAP_WRITE, CNode, Cap, current_cspace, get_cap, commit_untyped};
 use crate::logger::verbose;
-use crate::sched::CURRENT_THREAD;
-use core::sync::atomic::Ordering;
 use xleb_api::CapType;
 use xleb_api::SyscallErrno::*;
 use crate::arch::thread::STACK_SIZE;
 use crate::utils::align_up;
 
 use super::SyscallFrame;
-
-const TID: u32 = 1;
 
 fn validate_vaddr(vaddr: u32, name: &str) -> Result<(), i32> {
     if vaddr & PAGE_MASK as u32 != 0 {
@@ -71,6 +66,8 @@ fn sys_impl(frame: &mut SyscallFrame) -> Result<i32, i32> {
 
     let tid = 1;
     let ustack_vaddr = USER_STACK_ADDR;
+    // FIXME: kstack_vaddr должен быть kernel-VA, а не в user-half.
+    // KERNEL_STACK_ADDR = 0x8008_0000 — kernel-half, ок.
     let kstack_vaddr = KERNEL_STACK_ADDR + tid * STACK_SIZE as u32;
 
     let mut untyped_work = untyped;
@@ -112,4 +109,3 @@ fn sys_impl(frame: &mut SyscallFrame) -> Result<i32, i32> {
     );
     Ok(SUCCESS.into())
 }
-

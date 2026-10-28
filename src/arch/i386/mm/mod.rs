@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 
-pub(crate) mod temp_window;
-
 use crate::logger::verbose;
 use xleb_api::SyscallErrno::*;
-use temp_window::TempWindow;
 use crate::utils::align_up;
 use crate::cap::Cap;
 
@@ -82,8 +79,8 @@ pub(crate) unsafe fn alloc_pt_from_untyped(
     untyped.object += consumed;
     untyped.size -= consumed;
     unsafe {
-        let mut win = TempWindow::map(pt_phys, PAGE_SIZE);
-        core::ptr::write_bytes(win.as_mut_ptr(), 0, PAGE_SIZE);
+        let pt_va = PHYS_TO_VIRT!(pt_phys) as *mut u8;
+        core::ptr::write_bytes(pt_va, 0, PAGE_SIZE);
     }
     verbose!("{}: allocated PT at {:#x} (consumed={})", ctx, pt_phys, consumed);
     Ok(pt_phys)
@@ -108,28 +105,25 @@ pub(crate) unsafe fn map_range_in_pagespace(
     }
 
     unsafe {
-        let mut pd_win = TempWindow::map(ps_phys, PAGE_SIZE);
-        let pd = pd_win.as_mut_ptr() as *mut u32;
+        let pd = PHYS_TO_VIRT!(ps_phys) as *mut u32;
         let pd_index = (vaddr >> PD_SHIFT) as usize;
         if pd_index >= PT_ENTRIES {
             verbose!("{}: pd_index={} out of range", ctx, pd_index);
             return Err(EINVAL.into());
         }
 
-        let mut pt_phys = {
+        let pt_phys = {
             let pde = *pd.add(pd_index);
             if pde & PAGE_PRESENT == 0 {
                 let pt = unsafe { alloc_pt_from_untyped(untyped, ctx)? };
                 *pd.add(pd_index) = pt | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
                 pt
             } else {
-                let cur = pde & !PAGE_MASK as u32;
-                cur
+                pde & !PAGE_MASK as u32
             }
         };
 
-        let mut pt_win = TempWindow::map(pt_phys, PAGE_SIZE);
-        let pt = pt_win.as_mut_ptr() as *mut u32;
+        let pt = PHYS_TO_VIRT!(pt_phys) as *mut u32;
         let pt_index = ((vaddr >> PT_SHIFT) & PT_MASK) as usize;
         if pt_index + pages > PT_ENTRIES {
             verbose!("{}: {} pages at pt_index={} cross PT boundary", ctx, pages, pt_index);

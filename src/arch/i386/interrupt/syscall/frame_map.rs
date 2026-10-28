@@ -2,12 +2,11 @@
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 
 use crate::arch::cpu;
-use crate::arch::mm::temp_window::TempWindow;
 use crate::arch::mm::{PAGE_PRESENT, PAGE_USER, PAGE_WRITE, PAGE_MASK};
-use crate::arch::thread::PAGE_SPACE_ADDR;
 use crate::cap::{CAP_READ, CAP_WRITE, CNode, Cap, current_cspace, get_cap};
 use crate::logger::verbose;
 use crate::sched::CURRENT_THREAD;
+use crate::PHYS_TO_VIRT;
 use core::sync::atomic::Ordering;
 use xleb_api::CapType;
 use xleb_api::SyscallErrno::*;
@@ -65,8 +64,7 @@ fn frame_flags(cap: &Cap) -> u32 {
 
 unsafe fn write_pt(pt_phys: u32, pt_index: usize, frame_phys: u32, pages: usize, flags: u32) {
     unsafe {
-        let mut win = TempWindow::map(pt_phys, PAGE_SIZE);
-        let pt = win.as_mut_ptr() as *mut u32;
+        let pt = PHYS_TO_VIRT!(pt_phys) as *mut u32;
         for i in 0..pages {
             *pt.add(pt_index + i) = (frame_phys + (i as u32) * PAGE_SIZE as u32) | flags;
         }
@@ -75,7 +73,8 @@ unsafe fn write_pt(pt_phys: u32, pt_index: usize, frame_phys: u32, pages: usize,
 
 unsafe fn write_pd(pd_index: usize, pt_phys: u32) {
     unsafe {
-        let pd = PAGE_SPACE_ADDR as *mut u32;
+        let ps = (*CURRENT_THREAD.load(Ordering::Acquire)).pagespace;
+        let pd = PHYS_TO_VIRT!(ps) as *mut u32;
         *pd.add(pd_index) = pt_phys | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
     }
 }

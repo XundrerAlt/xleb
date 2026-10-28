@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 
-use crate::arch::mm::temp_window::TempWindow;
 use crate::arch::mm::PAGE_SIZE;
 use crate::arch::thread::Thread;
 use crate::cap::{CAP_WRITE, CNode, Cap, current_cspace, get_cap, commit_untyped};
 use crate::logger::{verbose, warning};
+use crate::PHYS_TO_VIRT;
 use xleb_api::CapType;
 use xleb_api::SyscallErrno::*;
 use crate::utils::align_up;
@@ -18,8 +18,8 @@ fn alloc_in_untyped(untyped: &Cap, size: usize, align: usize) -> Result<(usize, 
     if consumed > untyped.size {
         verbose!(
             "sys_cap_retype: no room (need {} bytes after align, have {})",
-            consumed,
-            untyped.size
+                 consumed,
+                 untyped.size
         );
         return Err(ENOMEM.into());
     }
@@ -82,8 +82,8 @@ fn insert_cap(
 
 unsafe fn zero_object(obj: usize, len: usize) {
     unsafe {
-        let mut win = TempWindow::map(obj as u32, len);
-        core::ptr::write_bytes(win.as_mut_ptr(), 0, len);
+        let va = PHYS_TO_VIRT!(obj as u32) as *mut u8;
+        core::ptr::write_bytes(va, 0, len);
     }
 }
 
@@ -119,12 +119,12 @@ fn sys_impl(frame: &mut SyscallFrame) -> Result<i32, i32> {
 
     verbose!(
         "sys_cap_retype: untyped[{}] -> {:?} idx={} obj={:#x} size={} (consumed={})",
-        untyped_idx,
-        cap_type,
-        new_idx,
-        obj,
-        size,
-        consumed
+             untyped_idx,
+             cap_type,
+             new_idx,
+             obj,
+             size,
+             consumed
     );
     Ok(new_idx as i32)
 }

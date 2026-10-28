@@ -12,14 +12,12 @@ use crate::logger::{info, verbose};
 use crate::{PHYS_TO_VIRT, VIRT_TO_PHYS};
 use core::ptr;
 use xleb_api::{BOOTINFO_ADDR, CapType, ThreadInfo, ThreadState};
-use crate::arch::mm::temp_window::TempWindow;
 
 pub(crate) mod switch;
 
 pub const USER_STACK_ADDR: u32 = 0x4000_0000;
-pub const KERNEL_STACK_ADDR: u32 = 0xC008_0000;
+pub const KERNEL_STACK_ADDR: u32 = 0x8008_0000;
 pub const USER_CODE_ADDR: u32 = 0x4100_0000;
-pub const PAGE_SPACE_ADDR: u32 = 0xD000_0000;
 pub const STACK_SIZE: usize = 0x8000;
 
 const USER_CS: u32 = 0x1B;
@@ -64,9 +62,7 @@ pub struct Thread {
 static mut ROOT_PD: PageDir = PageDir([0; 1024]);
 static mut ROOT_CODE_PT: PageTable = PageTable([0; 1024]);
 static mut ROOT_STACK_PT: PageTable = PageTable([0; 1024]);
-static mut ROOT_KERNEL_PT: PageTable = PageTable([0; 1024]);
 static mut ROOT_BOOTINFO_PT: PageTable = PageTable([0; 1024]);
-static mut ROOT_PAGE_SPACE_PT: PageTable = PageTable([0; 1024]);
 
 #[repr(C, align(16))]
 struct RootKStack([u8; STACK_SIZE]);
@@ -77,11 +73,7 @@ struct RootUStack([u8; STACK_SIZE]);
 static mut ROOT_USTACK: RootUStack = RootUStack([0; STACK_SIZE]);
 
 static mut ROOT_THREAD: Thread = Thread {
-    info: ThreadInfo {
-        stack_top: 0,
-        stack_size: 0,
-        entry: 0,
-    },
+    info: ThreadInfo { stack_top: 0, stack_size: 0, entry: 0 },
     tid: 0,
     state: ThreadState::Ready,
     pagespace: 0,
@@ -146,8 +138,7 @@ pub(crate) unsafe fn init_thread(
              kstack_top - frame_esp
     );
     unsafe {
-        let mut win = TempWindow::map(th_phys, PAGE_SIZE);
-        let th = win.as_mut_ptr() as *mut Thread;
+        let th = PHYS_TO_VIRT!(th_phys) as *mut Thread;
         (*th).info = ThreadInfo { stack_top: kstack_top, stack_size: STACK_SIZE as u32, entry };
         (*th).tid = tid;
         (*th).state = ThreadState::Ready;
@@ -180,23 +171,21 @@ unsafe fn zero_root_tables(
     code_pt: &mut PageTable,
     stack_pt: &mut PageTable,
     bootinfo_pt: &mut PageTable,
-    kernel_pt: &mut PageTable,
 ) {
     unsafe {
         ptr::write_bytes(pd.0.as_mut_ptr(), 0, 1024);
         ptr::write_bytes(code_pt.0.as_mut_ptr(), 0, 1024);
         ptr::write_bytes(stack_pt.0.as_mut_ptr(), 0, 1024);
         ptr::write_bytes(bootinfo_pt.0.as_mut_ptr(), 0, 1024);
-        ptr::write_bytes(kernel_pt.0.as_mut_ptr(), 0, 1024);
     }
 }
 
 unsafe fn copy_kernel_pd(pd_ptr: *mut u32) {
     let old_cr3 = unsafe { cpu::read_cr3() };
     let old_pd = PHYS_TO_VIRT!(old_cr3) as *const u32;
-    verbose!("create_root: old_cr3={:#x}, copying PD[768..1024]", old_cr3);
+    verbose!("create_root: old_cr3={:#x}, copying PD[512..1024]", old_cr3);
     unsafe {
-        for i in 768..1024 {
+        for i in 512..1024 {
             *pd_ptr.add(i) = *old_pd.add(i);
         }
     }
@@ -238,22 +227,6 @@ unsafe fn map_user_stack(pd_ptr: *mut u32, stack_pt_ptr: *mut u32, ustack_phys: 
     }
 }
 
-unsafe fn map_kernel_stack(pd_ptr: *mut u32, pt_ptr: *mut u32, kstack_phys: u32, kstack_vaddr: u32) {
-    let pages = STACK_SIZE / PAGE_SIZE;
-    verbose!("...");
-    unsafe {
-        map_region(pd_ptr, pt_ptr, kstack_vaddr, kstack_phys, STACK_SIZE, PAGE_PRESENT | PAGE_WRITE);
-        let pd_idx = (kstack_vaddr >> PD_SHIFT) as usize;
-        let pde = *pd_ptr.add(pd_idx);
-        verbose!("PDE[{}] = {:#x} (present={}, pt={:#x})", pd_idx, pde, pde & PAGE_PRESENT != 0, pde & !(PAGE_MASK as u32));
-        for i in 0..pages {
-            let pt_idx = (((kstack_vaddr >> PT_SHIFT) & PT_MASK) as usize) + i;
-            let pte = *pt_ptr.add(pt_idx);
-            verbose!("PTE[{}] = {:#x} (present={}, phys={:#x})", pt_idx, pte, pte & PAGE_PRESENT != 0, pte & !(PAGE_MASK as u32));
-        }
-    }
-}
-
 unsafe fn map_bootinfo(pd_ptr: *mut u32, bootinfo_pt_ptr: *mut u32) {
     unsafe {
         bootinfo::fill();
@@ -274,28 +247,11 @@ unsafe fn map_bootinfo(pd_ptr: *mut u32, bootinfo_pt_ptr: *mut u32) {
     }
 }
 
-unsafe fn map_pagespace(pd_ptr: *mut u32, pagespace_pt_ptr: *mut u32) {
-    verbose!(
-        "create_root: mapping pagespace: {:#x} -> PAGE_SPACE_ADDR={:#x}",
-        VIRT_TO_PHYS!(pd_ptr as u32),
-        PAGE_SPACE_ADDR
-    );
-    unsafe {
-        map_page_in(
-            pd_ptr,
-            pagespace_pt_ptr,
-            PAGE_SPACE_ADDR,
-            VIRT_TO_PHYS!(pd_ptr as u32),
-            PAGE_PRESENT | PAGE_WRITE,
-        );
-    }
-}
-
-unsafe fn install_pagespace_cap(th: &mut Thread, pd_ptr: *mut u32) {
+unsafe fn install_pagespace_cap(th: &mut Thread, pd_phys: u32) {
     unsafe {
         th.cspace.insert(
             None,
-            Cap::new(CapType::PageSpace, pd_ptr as usize, 0, CAP_ALL),
+            Cap::new(CapType::PageSpace, pd_phys as usize, 0, CAP_ALL),
         );
     }
 }
@@ -337,16 +293,12 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
     let pd = unsafe { &mut *ptr::addr_of_mut!(ROOT_PD) };
     let code_pt = unsafe { &mut *ptr::addr_of_mut!(ROOT_CODE_PT) };
     let stack_pt = unsafe { &mut *ptr::addr_of_mut!(ROOT_STACK_PT) };
-    let kernel_pt = unsafe { &mut *ptr::addr_of_mut!(ROOT_KERNEL_PT) };
     let bootinfo_pt = unsafe { &mut *ptr::addr_of_mut!(ROOT_BOOTINFO_PT) };
-    let pagespace_pt = unsafe { &mut *ptr::addr_of_mut!(ROOT_PAGE_SPACE_PT) };
 
     let pd_ptr = pd.0.as_mut_ptr();
     let code_pt_ptr = code_pt.0.as_mut_ptr();
     let stack_pt_ptr = stack_pt.0.as_mut_ptr();
     let bootinfo_pt_ptr = bootinfo_pt.0.as_mut_ptr();
-    let pagespace_pt_ptr = pagespace_pt.0.as_mut_ptr();
-    let kernel_pt_ptr = kernel_pt.0.as_mut_ptr();
 
     verbose!(
         "create_root: ROOT_PD={:#x} ROOT_CODE_PT={:#x}",
@@ -355,7 +307,7 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
     );
 
     unsafe {
-        zero_root_tables(pd, code_pt, stack_pt, bootinfo_pt, kernel_pt);
+        zero_root_tables(pd, code_pt, stack_pt, bootinfo_pt);
         copy_kernel_pd(pd_ptr);
         map_user_code(pd_ptr, code_pt_ptr, prog_phys, prog_size);
     }
@@ -364,13 +316,11 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
     unsafe {
         map_user_stack(pd_ptr, stack_pt_ptr, ustack_phys);
         map_bootinfo(pd_ptr, bootinfo_pt_ptr);
-        map_pagespace(pd_ptr, pagespace_pt_ptr);
     }
 
     let pagespace_phys = VIRT_TO_PHYS!(pd_ptr as u32);
     let user_esp = USER_STACK_ADDR + STACK_SIZE as u32;
     unsafe {
-        cpu::write_cr3(pagespace_phys);
         init_thread(
             VIRT_TO_PHYS!(th as *mut Thread as usize) as u32,
             0,
@@ -385,7 +335,7 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
     th.context = ctx as *mut ThreadContext;
 
     unsafe {
-        install_pagespace_cap(th, pd_ptr);
+        install_pagespace_cap(th, pagespace_phys);
         install_untyped_caps(th);
     }
 
