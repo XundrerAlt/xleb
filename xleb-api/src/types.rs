@@ -11,6 +11,8 @@ pub enum CapType {
     PageTable = 4,
     Thread = 5,
     PageSpace = 6,
+    x86_PortIo_Cap = 7,
+    x86_PortIoControl_Cap = 8,
 }
 
 impl TryFrom<u32> for CapType {
@@ -24,6 +26,8 @@ impl TryFrom<u32> for CapType {
             4 => Ok(CapType::PageTable),
             5 => Ok(CapType::Thread),
             6 => Ok(CapType::PageSpace),
+            7 => Ok(CapType::x86_PortIo_Cap),
+            8 => Ok(CapType::x86_PortIoControl_Cap),
             _ => Err(()),
         }
     }

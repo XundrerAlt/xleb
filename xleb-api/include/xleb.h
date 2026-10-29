@@ -32,6 +32,8 @@ enum XLEB_cap
     PAGE_TABLE = 4,
     THREAD = 5,
     PAGE_SPACE = 6,
+    X86_PORT_IO_CAP = 7,
+    X86_PORT_IO_CONTROL_CAP = 8,
 };
 #if __STDC_VERSION__ >= 202311L
 typedef enum XLEB_cap XLEB_cap;
@@ -50,6 +52,8 @@ enum XLEB_syscall_num_t
     FRAME_MAP = 3,
     THREAD_CONF = 4,
     THREAD_START = 5,
+    X86_PORT_IO = 6,
+    X86_DERIVE_PORT_IO = 7,
 };
 #if __STDC_VERSION__ >= 202311L
 typedef enum XLEB_syscall_num_t XLEB_syscall_num_t;

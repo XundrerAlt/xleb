@@ -60,6 +60,13 @@ fn compute_size(cap_type: CapType, raw: usize) -> Result<usize, i32> {
         CapType::PageTable | CapType::PageSpace => Ok(PAGE_SIZE),
         CapType::CNode | CapType::Untyped => Ok(raw),
         CapType::Thread => Ok(core::mem::size_of::<Thread>()),
+        CapType::x86_PortIo_Cap | CapType::x86_PortIoControl_Cap => {
+            verbose!(
+                "sys_cap_retype: {:?} is not memory. Use sys_x86_derive_portio instead",
+                cap_type
+            );
+            Err(EINVAL.into())
+        }
         CapType::None => {
             verbose!("sys_cap_retype: None is invalid");
             Err(EINVAL.into())

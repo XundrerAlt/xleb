@@ -10,6 +10,8 @@ mod cap_retype;
 mod frame_map;
 mod thread_conf;
 mod thread_start;
+mod x86_portio;
+mod x86_derive_portio;
 
 pub(crate) const MAX_FRAME_SIZE: usize = 1024 * PAGE_SIZE;
 
@@ -51,6 +53,8 @@ pub unsafe extern "C" fn syscall_handler(frame: &mut SyscallFrame) {
         Ok(FrameMap) => frame_map::sys(f),
         Ok(ThreadConf) => thread_conf::sys(f),
         Ok(ThreadStart) => thread_start::sys(f),
+        Ok(x86_PortIo) => x86_portio::sys(f),
+        Ok(x86_Derive_PortIo) => x86_derive_portio::sys(f),
         _ => {
             verbose!("Unknown syscall");
             ENOSYS.into()
