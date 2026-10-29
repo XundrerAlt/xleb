@@ -33,8 +33,8 @@ pub(crate) extern "C" fn irq_handler(frame: *const InterruptFrame) {
         return;
     }
     let irq = (frame.int_no - 0x20) as u8;
-    dispatch(irq, frame);
     unsafe {
         pic::send_eoi(irq);
     }
+    dispatch(irq, frame);
 }

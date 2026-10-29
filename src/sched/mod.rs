@@ -2,10 +2,9 @@
 // SPDX-FileCopyrightText: 2026 XundrerAlt
 
 use crate::arch::boot::modules;
-use crate::arch::thread::{self, Thread};
+use crate::arch::thread::{self, Thread, ThreadState};
 use crate::logger::{debug, info};
 use core::sync::atomic::{AtomicPtr, Ordering};
-use xleb_api::ThreadState;
 
 mod queue;
 use queue::ThreadQueue;
@@ -39,10 +38,9 @@ pub(crate) unsafe fn init() {
         }
     };
     let th = unsafe { thread::create_root(prog_ptr, prog_size) };
-    RUN_QUEUE.lock().push(th);
     unsafe { set_current(th) };
     info!("scheduler: hello world");
-    unsafe { thread::switch::do_(th) };
+    unsafe { thread::switch::do_first(th) };
 }
 
 pub(crate) unsafe fn yield_now() {
@@ -65,7 +63,7 @@ pub(crate) unsafe fn yield_now() {
     if next != current {
         unsafe {
             set_current(next);
-            thread::switch::do_(next);
+            thread::switch::do_(current, next);
         }
     } else if !current.is_null() {
         unsafe { (*current).state = ThreadState::Running };
