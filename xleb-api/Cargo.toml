@@ -5,4 +5,7 @@ edition = "2024"
 license = "MIT"
 description = "Public API for the xleb kernel"
 
+[build-dependencies]
+cbindgen = "0.29.4"
+
 [lib]
