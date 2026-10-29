@@ -3,7 +3,7 @@
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SyscallNum {
-    Test = 0,
+    ThreadSuspend = 0,
     CapFind = 1,
     CapRetype = 2,
     FrameMap = 3,
@@ -17,7 +17,7 @@ impl TryFrom<u32> for SyscallNum {
     type Error = ();
     fn try_from(nr: u32) -> Result<SyscallNum, ()> {
         match nr {
-            0 => Ok(SyscallNum::Test),
+            0 => Ok(SyscallNum::ThreadSuspend),
             1 => Ok(SyscallNum::CapFind),
             2 => Ok(SyscallNum::CapRetype),
             3 => Ok(SyscallNum::FrameMap),

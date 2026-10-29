@@ -4,17 +4,10 @@ use crate::logger::verbose;
 use crate::sched::CURRENT_THREAD;
 use core::cell::UnsafeCell;
 use core::sync::atomic::Ordering;
-use xleb_api::CapType;
 use xleb_api::SyscallErrno::{EINVAL, EPERM};
+pub(crate) use xleb_api::cap::*;
 
 pub const MAX_CAPS: usize = 64;
-
-pub const CAP_READ: u32 = 1 << 0;
-pub const CAP_WRITE: u32 = 1 << 1;
-pub const CAP_EXEC: u32 = 1 << 2;
-pub const CAP_GRANT: u32 = 1 << 3;
-pub const CAP_REVOKE: u32 = 1 << 4;
-pub const CAP_ALL: u32 = CAP_READ | CAP_WRITE | CAP_EXEC | CAP_GRANT | CAP_REVOKE;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Cap {

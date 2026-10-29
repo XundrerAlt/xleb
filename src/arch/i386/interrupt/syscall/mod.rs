@@ -10,6 +10,7 @@ mod cap_retype;
 mod frame_map;
 mod thread_conf;
 mod thread_start;
+mod thread_suspend;
 mod x86_derive_portio;
 mod x86_portio;
 
@@ -44,10 +45,7 @@ pub unsafe extern "C" fn syscall_handler(frame: &mut SyscallFrame) {
 
     let nr = f.eax;
     let ret: i32 = match SyscallNum::try_from(nr) {
-        Ok(Test) => {
-            verbose!("SYSCALL!");
-            0
-        }
+        Ok(ThreadSuspend) => thread_suspend::sys(f),
         Ok(CapFind) => cap_find::sys(f),
         Ok(CapRetype) => cap_retype::sys(f),
         Ok(FrameMap) => frame_map::sys(f),

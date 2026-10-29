@@ -8,7 +8,7 @@ use core::mem::offset_of;
 pub enum ThreadState {
     Ready = 0,
     Running = 1,
-    Dead = 2,
+    Inactive = 2,
 }
 
 const _: () = {

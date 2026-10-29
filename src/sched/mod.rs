@@ -45,20 +45,32 @@ pub(crate) unsafe fn init() {
 
 pub(crate) unsafe fn yield_now() {
     let current = current();
+    if !current.is_null() && (*current).state != ThreadState::Inactive {
+        (*current).state = ThreadState::Ready;
+        RUN_QUEUE.lock().push(current);
+    }
+
+    if !has_ready() {
+        if (*current).state == ThreadState::Inactive {
+            panic!("scheduler: no runnable threads (all Inactive or none)");
+        }
+        (*current).state = ThreadState::Running;
+        return;
+    }
+
     let next = {
-        let mut queue = RUN_QUEUE.lock();
-        if !current.is_null() {
-            unsafe { (*current).state = ThreadState::Ready };
-            queue.push(current);
-        }
-        let n = queue.pop().unwrap_or(current);
-        if n.is_null() {
-            if !current.is_null() {
-                unsafe { (*current).state = ThreadState::Running };
+        let mut q = RUN_QUEUE.lock();
+        loop {
+            match q.pop() {
+                Some(n) if !n.is_null() => {
+                    let st = (*n).state;
+                    if st == ThreadState::Ready || st == ThreadState::Running {
+                        break n;
+                    }
+                }
+                _ => panic!("scheduler: no runnable threads (all Inactive or none)"),
             }
-            return;
         }
-        n
     };
     if next != current {
         unsafe {
@@ -68,4 +80,15 @@ pub(crate) unsafe fn yield_now() {
     } else if !current.is_null() {
         unsafe { (*current).state = ThreadState::Running };
     }
+}
+
+pub(crate) fn has_ready() -> bool {
+    let q = RUN_QUEUE.lock();
+    q.iter().any(|n| {
+        if n.is_null() {
+            return false;
+        }
+        let st = unsafe { (*n).state };
+        st == ThreadState::Ready || st == ThreadState::Running
+    })
 }

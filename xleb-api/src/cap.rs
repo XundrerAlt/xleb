@@ -32,3 +32,10 @@ impl TryFrom<u32> for CapType {
         }
     }
 }
+
+pub const CAP_READ: u32 = 1 << 0;
+pub const CAP_WRITE: u32 = 1 << 1;
+pub const CAP_EXEC: u32 = 1 << 2;
+pub const CAP_GRANT: u32 = 1 << 3;
+pub const CAP_REVOKE: u32 = 1 << 4;
+pub const CAP_ALL: u32 = CAP_READ | CAP_WRITE | CAP_EXEC | CAP_GRANT | CAP_REVOKE;

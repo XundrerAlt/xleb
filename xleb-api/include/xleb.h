@@ -10,6 +10,18 @@
 
 #include <stdint.h>
 
+#define XLEB_CAP_READ (1 << 0)
+
+#define XLEB_CAP_WRITE (1 << 1)
+
+#define XLEB_CAP_EXEC (1 << 2)
+
+#define XLEB_CAP_GRANT (1 << 3)
+
+#define XLEB_CAP_REVOKE (1 << 4)
+
+#define XLEB_CAP_ALL ((((XLEB_CAP_READ | XLEB_CAP_WRITE) | XLEB_CAP_EXEC) | XLEB_CAP_GRANT) | XLEB_CAP_REVOKE)
+
 #define XLEB_BOOTINFO_MAGIC 1111837784
 
 #define XLEB_BOOTINFO_VERSION 1
@@ -46,7 +58,7 @@ enum XLEB_syscall_num_t
   : uint32_t
 #endif // __STDC_VERSION__ >= 202311L
  {
-    TEST = 0,
+    THREAD_SUSPEND = 0,
     CAP_FIND = 1,
     CAP_RETYPE = 2,
     FRAME_MAP = 3,

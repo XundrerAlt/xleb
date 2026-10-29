@@ -259,6 +259,16 @@ unsafe fn install_portio_control_cap(th: &mut Thread) {
     }
 }
 
+unsafe fn install_self_thread_cap(th: &mut Thread) {
+    let th_phys = VIRT_TO_PHYS!(th as *mut Thread as u32);
+    unsafe {
+        th.cspace.insert(
+            None,
+            Cap::new(CapType::Thread, th_phys as usize, 0, CAP_ALL),
+        );
+    }
+}
+
 pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static mut Thread {
     validate_program(prog_phys, prog_size);
 
@@ -316,6 +326,7 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
         install_pagespace_cap(th, pagespace_phys);
         install_untyped_caps(th);
         install_portio_control_cap(th);
+        install_self_thread_cap(th);
     }
 
     info!("Root thread initialized");

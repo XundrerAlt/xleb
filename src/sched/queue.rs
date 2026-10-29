@@ -54,6 +54,13 @@ impl ThreadQueue {
         Some(t)
     }
 
+    pub fn iter(&self) -> ThreadQueueIter<'_> {
+        ThreadQueueIter {
+            cur: self.head,
+            _marker: core::marker::PhantomData,
+        }
+    }
+
     pub fn is_empty(&self) -> bool {
         self.head.is_null()
     }
@@ -67,3 +74,20 @@ impl ThreadQueue {
 // never dereferenced without the Mutex held.
 unsafe impl Send for ThreadQueue {}
 unsafe impl Sync for ThreadQueue {}
+
+pub struct ThreadQueueIter<'a> {
+    cur: *mut Thread,
+    _marker: core::marker::PhantomData<&'a ThreadQueue>,
+}
+
+impl<'a> Iterator for ThreadQueueIter<'a> {
+    type Item = *mut Thread;
+    fn next(&mut self) -> Option<*mut Thread> {
+        if self.cur.is_null() {
+            return None;
+        }
+        let t = self.cur;
+        self.cur = unsafe { (*t).next };
+        Some(t)
+    }
+}
