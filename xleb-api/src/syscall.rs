@@ -9,6 +9,8 @@ pub enum SyscallNum {
     FrameMap = 3,
     ThreadConf = 4,
     ThreadStart = 5,
+    x86_PortIo = 6,
+    x86_Derive_PortIo = 7,
 }
 
 impl TryFrom<u32> for SyscallNum {
@@ -21,6 +23,8 @@ impl TryFrom<u32> for SyscallNum {
             3 => Ok(SyscallNum::FrameMap),
             4 => Ok(SyscallNum::ThreadConf),
             5 => Ok(SyscallNum::ThreadStart),
+            6 => Ok(SyscallNum::x86_PortIo),
+            7 => Ok(SyscallNum::x86_Derive_PortIo),
             _ => Err(()),
         }
     }

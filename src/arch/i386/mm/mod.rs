@@ -17,6 +17,8 @@ pub(crate) const PD_SHIFT: u32 = 22;
 pub(crate) const PT_SHIFT: u32 = 12;
 pub(crate) const PT_MASK: u32 = 0x3FF;
 
+pub(crate) const KERNEL_SPACE_START: u32 = 0x8000_0000;
+
 #[repr(C, align(4096))]
 pub(crate) struct PageTable(pub(crate) [u32; 1024]);
 #[repr(C, align(4096))]
@@ -29,7 +31,7 @@ pub(crate) struct PageDir(pub(crate) [u32; 1024]);
 macro_rules! VIRT_TO_PHYS {
     ($addr:expr) => {{
         let a = ($addr) as u32;
-        if a >= 0x8000_0000 { a - 0x8000_0000 } else { a }
+        if a >= crate::arch::mm::KERNEL_SPACE_START { a - crate::arch::mm::KERNEL_SPACE_START } else { a }
     }};
 }
 
@@ -37,7 +39,7 @@ macro_rules! VIRT_TO_PHYS {
 macro_rules! PHYS_TO_VIRT {
     ($addr:expr) => {{
         let a = ($addr) as u32;
-        if a < 0x8000_0000 { a + 0x8000_0000 } else { a }
+        if a < crate::arch::mm::KERNEL_SPACE_START { a + crate::arch::mm::KERNEL_SPACE_START } else { a }
     }};
 }
 

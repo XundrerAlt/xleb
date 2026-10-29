@@ -68,7 +68,7 @@ unsafe fn build_user_iret_frame(kstack_top: u32, user_eip: u32, user_esp: u32) -
         sp = sp.sub(1);
         *sp = user_esp;
         sp = sp.sub(1);
-        *sp = 0x3202; // SECURITY TODO: any threads can break any ports. fix it
+        *sp = 0x202;
         sp = sp.sub(1);
         *sp = USER_CS;
         sp = sp.sub(1);
@@ -250,6 +250,17 @@ unsafe fn install_untyped_caps(th: &mut Thread) {
     }
 }
 
+unsafe fn install_portio_control_cap(th: &mut Thread) {
+    unsafe {
+        th.cspace.insert(None, Cap::new(
+            CapType::x86_PortIoControl_Cap,
+            0,
+            65536,
+            CAP_ALL,
+        ));
+    }
+}
+
 pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static mut Thread {
     validate_program(prog_phys, prog_size);
 
@@ -306,6 +317,7 @@ pub(crate) unsafe fn create_root(prog_phys: u32, prog_size: usize) -> &'static m
     unsafe {
         install_pagespace_cap(th, pagespace_phys);
         install_untyped_caps(th);
+        install_portio_control_cap(th);
     }
 
     info!("Root thread initialized");
