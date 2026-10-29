@@ -42,8 +42,8 @@ const _: () = {
 pub struct Thread {
     // what switch_to used are primary
     pub context: ThreadContext, // all regs
-    pub pagespace: u32, // page directory
-    pub esp: *mut u32, // stack
+    pub pagespace: u32,         // page directory
+    pub esp: *mut u32,          // stack
 
     // everything else are secondary
     pub tid: u32,

@@ -10,8 +10,8 @@ mod cap_retype;
 mod frame_map;
 mod thread_conf;
 mod thread_start;
-mod x86_portio;
 mod x86_derive_portio;
+mod x86_portio;
 
 pub(crate) const MAX_FRAME_SIZE: usize = 1024 * PAGE_SIZE;
 

@@ -31,7 +31,11 @@ pub(crate) struct PageDir(pub(crate) [u32; 1024]);
 macro_rules! VIRT_TO_PHYS {
     ($addr:expr) => {{
         let a = ($addr) as u32;
-        if a >= crate::arch::mm::KERNEL_SPACE_START { a - crate::arch::mm::KERNEL_SPACE_START } else { a }
+        if a >= crate::arch::mm::KERNEL_SPACE_START {
+            a - crate::arch::mm::KERNEL_SPACE_START
+        } else {
+            a
+        }
     }};
 }
 
@@ -39,7 +43,11 @@ macro_rules! VIRT_TO_PHYS {
 macro_rules! PHYS_TO_VIRT {
     ($addr:expr) => {{
         let a = ($addr) as u32;
-        if a < crate::arch::mm::KERNEL_SPACE_START { a + crate::arch::mm::KERNEL_SPACE_START } else { a }
+        if a < crate::arch::mm::KERNEL_SPACE_START {
+            a + crate::arch::mm::KERNEL_SPACE_START
+        } else {
+            a
+        }
     }};
 }
 

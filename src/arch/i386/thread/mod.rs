@@ -252,12 +252,10 @@ unsafe fn install_untyped_caps(th: &mut Thread) {
 
 unsafe fn install_portio_control_cap(th: &mut Thread) {
     unsafe {
-        th.cspace.insert(None, Cap::new(
-            CapType::x86_PortIoControl_Cap,
-            0,
-            65536,
-            CAP_ALL,
-        ));
+        th.cspace.insert(
+            None,
+            Cap::new(CapType::x86_PortIoControl_Cap, 0, 65536, CAP_ALL),
+        );
     }
 }
 
