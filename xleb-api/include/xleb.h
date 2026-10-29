@@ -59,13 +59,13 @@ enum XLEB_syscall_num_t
 #endif // __STDC_VERSION__ >= 202311L
  {
     THREAD_SUSPEND = 0,
-    CAP_FIND = 1,
-    CAP_RETYPE = 2,
-    FRAME_MAP = 3,
-    THREAD_CONF = 4,
-    THREAD_START = 5,
-    X86_PORT_IO = 6,
-    X86_DERIVE_PORT_IO = 7,
+    THREAD_CONF = 1,
+    THREAD_START = 2,
+    CAP_FIND = 16,
+    CAP_RETYPE = 17,
+    FRAME_MAP = 32,
+    X86_PORT_IO = 48,
+    X86_DERIVE_PORT_IO = 49,
 };
 #if __STDC_VERSION__ >= 202311L
 typedef enum XLEB_syscall_num_t XLEB_syscall_num_t;

@@ -3,14 +3,21 @@
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SyscallNum {
+    // Threads
     ThreadSuspend = 0,
-    CapFind = 1,
-    CapRetype = 2,
-    FrameMap = 3,
-    ThreadConf = 4,
-    ThreadStart = 5,
-    x86_PortIo = 6,
-    x86_Derive_PortIo = 7,
+    ThreadConf = 1,
+    ThreadStart = 2,
+
+    // Capabilities
+    CapFind = 16,
+    CapRetype = 17,
+
+    // Memory
+    FrameMap = 32,
+
+    // x86 Ports
+    x86_PortIo = 48,
+    x86_Derive_PortIo = 49,
 }
 
 impl TryFrom<u32> for SyscallNum {
@@ -18,14 +25,14 @@ impl TryFrom<u32> for SyscallNum {
     fn try_from(nr: u32) -> Result<SyscallNum, ()> {
         match nr {
             0 => Ok(SyscallNum::ThreadSuspend),
-            1 => Ok(SyscallNum::CapFind),
-            2 => Ok(SyscallNum::CapRetype),
-            3 => Ok(SyscallNum::FrameMap),
-            4 => Ok(SyscallNum::ThreadConf),
-            5 => Ok(SyscallNum::ThreadStart),
-            6 => Ok(SyscallNum::x86_PortIo),
-            7 => Ok(SyscallNum::x86_Derive_PortIo),
-            _ => Err(()),
+            1 => Ok(SyscallNum::ThreadConf),
+            2 => Ok(SyscallNum::ThreadStart),
+            16 => Ok(SyscallNum::CapFind),
+            17 => Ok(SyscallNum::CapRetype),
+            32 => Ok(SyscallNum::FrameMap),
+            48 => Ok(SyscallNum::x86_PortIo),
+            49 => Ok(SyscallNum::x86_Derive_PortIo),
+            _  => Err(()),
         }
     }
 }
