@@ -11,9 +11,12 @@ use crate::cap::{CAP_ALL, CNode, Cap};
 use crate::logger::{info, verbose};
 use crate::{PHYS_TO_VIRT, VIRT_TO_PHYS};
 use core::ptr;
-use xleb_api::{BOOTINFO_ADDR, CapType, ThreadInfo, ThreadState};
+use xleb_api::{BOOTINFO_ADDR, CapType};
 
 pub(crate) mod switch;
+
+pub(crate) mod types;
+pub(crate) use types::*;
 
 pub const USER_STACK_ADDR: u32 = 0x4000_0000;
 pub const KERNEL_STACK_ADDR: u32 = 0x8008_0000;
@@ -22,42 +25,6 @@ pub const STACK_SIZE: usize = 0x8000;
 
 const USER_CS: u32 = 0x1B;
 const USER_DS: u32 = 0x23;
-
-#[repr(C)]
-#[derive(Debug)]
-pub struct ThreadContext {
-    pub edi: u32,
-    pub esi: u32,
-    pub ebx: u32,
-    pub ebp: u32,
-    pub eflags: u32,
-    pub eip: u32,
-}
-
-const _: () = {
-    assert!(core::mem::size_of::<ThreadContext>() == 24);
-    assert!(core::mem::offset_of!(ThreadContext, edi) == 0);
-    assert!(core::mem::offset_of!(ThreadContext, esi) == 4);
-    assert!(core::mem::offset_of!(ThreadContext, ebx) == 8);
-    assert!(core::mem::offset_of!(ThreadContext, ebp) == 12);
-    assert!(core::mem::offset_of!(ThreadContext, eflags) == 16);
-    assert!(core::mem::offset_of!(ThreadContext, eip) == 20);
-};
-
-#[repr(C)]
-#[derive(Debug)]
-pub struct Thread {
-    pub info: ThreadInfo,
-    pub tid: u32,
-    pub state: ThreadState,
-    pub pagespace: u32,
-    pub esp: *mut u32,
-    pub context: ThreadContext,
-    pub stack_limit: *mut u8,
-    pub next: *mut Thread,
-    pub prev: *mut Thread,
-    pub cspace: CNode,
-}
 
 static mut ROOT_PD: PageDir = PageDir([0; 1024]);
 static mut ROOT_CODE_PT: PageTable = PageTable([0; 1024]);
@@ -73,15 +40,6 @@ struct RootUStack([u8; STACK_SIZE]);
 static mut ROOT_USTACK: RootUStack = RootUStack([0; STACK_SIZE]);
 
 static mut ROOT_THREAD: Thread = Thread {
-    info: ThreadInfo {
-        stack_top: 0,
-        stack_size: 0,
-        entry: 0,
-    },
-    tid: 0,
-    state: ThreadState::Ready,
-    pagespace: 0,
-    esp: core::ptr::null_mut(),
     context: ThreadContext {
         eip: 0,
         eflags: 0x202,
@@ -90,6 +48,12 @@ static mut ROOT_THREAD: Thread = Thread {
         ebx: 0,
         ebp: 0,
     },
+    pagespace: 0,
+
+    tid: 0,
+    state: ThreadState::Ready,
+    esp: core::ptr::null_mut(),
+    kstack_top: 0,
     stack_limit: core::ptr::null_mut(),
     next: core::ptr::null_mut(),
     prev: core::ptr::null_mut(),
@@ -141,11 +105,6 @@ pub(crate) unsafe fn init_thread(
     );
     unsafe {
         let th = PHYS_TO_VIRT!(th_phys) as *mut Thread;
-        (*th).info = ThreadInfo {
-            stack_top: kstack_top,
-            stack_size: STACK_SIZE as u32,
-            entry,
-        };
         (*th).tid = tid;
         (*th).state = ThreadState::Ready;
         (*th).pagespace = pagespace_phys;
@@ -158,6 +117,7 @@ pub(crate) unsafe fn init_thread(
             ebx: 0,
             ebp: 0,
         };
+        (*th).kstack_top = kstack_top;
         (*th).stack_limit = kstack as *mut u8;
         (*th).next = core::ptr::null_mut();
         (*th).prev = core::ptr::null_mut();
