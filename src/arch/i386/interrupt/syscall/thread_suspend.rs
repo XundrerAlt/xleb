@@ -45,8 +45,6 @@ fn sys_impl(frame: &mut SyscallFrame) -> Result<i32, i32> {
         );
         unsafe {
             (*th_va).state = ThreadState::Inactive;
-        }
-        unsafe {
             yield_now();
         }
         unreachable!("scheduler returned to Inactive thread")
