@@ -6,6 +6,7 @@ use xleb_api::SyscallErrno::*;
 use xleb_api::SyscallNum::{self, *};
 
 mod cap_find;
+mod cap_grant;
 mod cap_retype;
 mod frame_map;
 mod thread_conf;
@@ -46,11 +47,12 @@ pub unsafe extern "C" fn syscall_handler(frame: &mut SyscallFrame) {
     let nr = f.eax;
     let ret: i32 = match SyscallNum::try_from(nr) {
         Ok(ThreadSuspend) => thread_suspend::sys(f),
-        Ok(CapFind) => cap_find::sys(f),
-        Ok(CapRetype) => cap_retype::sys(f),
-        Ok(FrameMap) => frame_map::sys(f),
         Ok(ThreadConf) => thread_conf::sys(f),
         Ok(ThreadStart) => thread_start::sys(f),
+        Ok(CapFind) => cap_find::sys(f),
+        Ok(CapRetype) => cap_retype::sys(f),
+        Ok(CapGrant) => cap_grant::sys(f),
+        Ok(FrameMap) => frame_map::sys(f),
         Ok(x86_PortIo) => x86_portio::sys(f),
         Ok(x86_Derive_PortIo) => x86_derive_portio::sys(f),
         _ => {

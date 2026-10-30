@@ -11,6 +11,7 @@ pub enum SyscallNum {
     // Capabilities
     CapFind = 16,
     CapRetype = 17,
+    CapGrant = 18,
 
     // Memory
     FrameMap = 32,
@@ -29,6 +30,7 @@ impl TryFrom<u32> for SyscallNum {
             2 => Ok(SyscallNum::ThreadStart),
             16 => Ok(SyscallNum::CapFind),
             17 => Ok(SyscallNum::CapRetype),
+            18 => Ok(SyscallNum::CapGrant),
             32 => Ok(SyscallNum::FrameMap),
             48 => Ok(SyscallNum::x86_PortIo),
             49 => Ok(SyscallNum::x86_Derive_PortIo),

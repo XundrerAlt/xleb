@@ -63,6 +63,7 @@ enum XLEB_syscall_num_t
     THREAD_START = 2,
     CAP_FIND = 16,
     CAP_RETYPE = 17,
+    CAP_GRANT = 18,
     FRAME_MAP = 32,
     X86_PORT_IO = 48,
     X86_DERIVE_PORT_IO = 49,
