@@ -1,0 +1,10 @@
+option('enable_tests',
+    type: 'boolean',
+    value: false,
+    description: 'Build tests')
+
+option('arch',
+    type: 'combo',
+    choices: ['i386'],
+    value: 'i386',
+    description: 'Architecture')
