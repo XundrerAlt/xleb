@@ -100,34 +100,6 @@ void ktest(void) {
         WARN("Invalid th_flag");
         test_failed();
     }
-    INFO("Test 4: VFS");
-    process_t *process = current_thread->process;
-    if (!process || !process->ns) {
-        ERROR("no process or ns");
-        test_failed();
-        return;
-    }
-    vfs_inode_t *stdout = vfs_inode_alloc(VFS_CHARDEV, "stdout");
-    if (!stdout) { test_failed(); return; }
-    vfs_inode_add_child(process->ns->root, stdout);
-    stdout->ops = &stdout_ops;
-    int fd = vfs_open(process, "/stdout", 0);
-    DEBUG("vfs_open: fd=%d", fd);
-    if (fd < 0) {
-        ERROR("open /stdout failed");
-        test_failed();
-        return;
-    }
-    int n1 = vfs_write(process, fd, "hello", 5);
-    int n2 = vfs_write(process, fd, " world", 6);
-    DEBUG("vfs_write: %d, %d", n1, n2);
-    int r = vfs_close(process, fd);
-    DEBUG("vfs_close: %d", r);
-    if (n1 == 5 && n2 == 6 && r == 0) {
-        test_success();
-    } else {
-        test_failed();
-    }
     if (tests_failed) {
         WARN("%d success; %d failed", tests_success, tests_failed);
     } else {

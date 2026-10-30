@@ -23,10 +23,10 @@ b() {
     ninja -C build
 }
 r() {
-    qemu-system-$ARCH -kernel build/kernel -serial stdio -no-reboot
+    qemu-system-$ARCH -kernel build/kernel -serial stdio -no-reboot "$@"
 }
 rd() {
-    qemu-system-$ARCH -kernel build/kernel -serial stdio -no-reboot -s -S
+    qemu-system-$ARCH -kernel build/kernel -serial stdio -no-reboot -s -S "$@"
 }
 br() {
     b
@@ -75,8 +75,8 @@ help() {
     echo "  cbr - delete all build + build kernel + run with qemu"
     echo "  cbtr - delete all build + build tests + run with qemu"
     echo "  d - start lldb + connect to localhost:1234"
-    echo "  r - run with qemu"
-    echo "  rd - run with qemu (with options -s -S)"
+    echo "  r [args] - run with qemu"
+    echo "  rd [args] - run with qemu (with options -s -S)"
     echo "  help - print this message"
 }
 set_target i386
